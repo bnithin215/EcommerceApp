@@ -1,0 +1,13 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Disallow: /admin
+Disallow: /checkout
+Disallow: /profile
+Disallow: /orders
+
+Allow: /
+Allow: /products
+Allow: /about
+Allow: /contact
+
+Sitemap: https://srija4her.com/sitemap.xml

@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Magenta Silk Saree",
+    "category": "Silk Sarees",
+    "color": "Magenta",
+    "size": 5.5,
+    "price": 4999,
+    "originalPrice": 7499,
+    "weight": 650,
+    "occasion": "Wedding",
+    "features": ["Gold Zari Border", "Traditional Weave"],
+    "imageUrl": "https://i.pinimg.com/736x/8a/e0/f8/8ae0f80209332b243b0d93fb497cc4fa.jpg"
+  },
+  {
+    "name": "Royal Blue Designer Saree",
+    "category": "Designer Sarees",
+    "color": "Royal Blue",
+    "size": 5.8,
+    "price": 5799,
+    "originalPrice": 8299,
+    "weight": 600,
+    "occasion": "Party Wear",
+    "features": ["Stone Work", "Designer Blouse"],
+    "imageUrl": "https://i.pinimg.com/736x/59/08/f4/5908f4b1985c6dac02640866c7944a02.jpg"
+  },
+  {
+    "name": "Teal Cotton Printed Saree",
+    "category": "Cotton Sarees",
+    "color": "Teal",
+    "size": 6.3,
+    "price": 1599,
+    "originalPrice": 2299,
+    "weight": 480,
+    "occasion": "Casual Wear",
+    "features": ["Printed Pattern", "Soft Fabric"],
+    "imageUrl": "https://i.pinimg.com/736x/28/1c/18/281c185273c799c2a68ea4f8623ad773.jpg"
+  },
+  {
+    "name": "Maroon Bridal Silk Saree",
+    "category": "Wedding Collection",
+    "color": "Maroon",
+    "size": 5.5,
+    "price": 8499,
+    "originalPrice": 11500,
+    "weight": 720,
+    "occasion": "Wedding",
+    "features": ["Heavy Zari Work", "Rich Pallu"],
+    "imageUrl": "https://www.bangaloredesignerboutique.com/wp-content/uploads/2024/01/Set-4-image-3.jpg"
+  },
+  {
+    "name": "Golden Yellow Festive Saree",
+    "category": "Silk Sarees",
+    "color": "Golden Yellow",
+    "size": 5.5,
+    "price": 3999,
+    "originalPrice": 5999,
+    "weight": 580,
+    "occasion": "Festive",
+    "features": ["Shimmer Finish", "Contrasting Border"],
+    "imageUrl": "https://i.pinimg.com/736x/43/7d/fa/437dfaebf0deff4931d02e05d6025ca7.jpg"
+  }
+]

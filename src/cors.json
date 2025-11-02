@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["http://localhost:3000", "https://srija4her.web.app"],
+    "method": ["GET", "PUT", "POST", "DELETE"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Authorization"]
+  }
+]
