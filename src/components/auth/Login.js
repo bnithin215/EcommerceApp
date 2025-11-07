@@ -125,7 +125,7 @@ const Login = () => {
                     </div>
 
                     {/* Reset Form */}
-                    <div className="bg-white rounded-lg shadow-md p-8">
+                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
                         <form className="space-y-6" onSubmit={handleForgotPassword}>
                             {/* Email Field */}
                             <div>
@@ -144,7 +144,7 @@ const Login = () => {
                                         required
                                         value={resetEmail}
                                         onChange={(e) => setResetEmail(e.target.value)}
-                                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors hover:border-gray-400"
+                                        className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-300 transition-all bg-gray-50/50 hover:border-gray-300"
                                         placeholder="Enter your email"
                                     />
                                 </div>
@@ -154,7 +154,7 @@ const Login = () => {
                             <button
                                 type="submit"
                                 disabled={resetLoading}
-                                className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="w-full flex items-center justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow"
                             >
                                 {resetLoading ? (
                                     <ButtonLoader className="mr-2" />
@@ -194,7 +194,7 @@ const Login = () => {
                 </div>
 
                 {/* Login Form */}
-                <div className="bg-white rounded-lg shadow-md p-8">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
                     <form className="space-y-6" onSubmit={handleSubmit}>
                         {/* Email Field */}
                         <div>
@@ -213,10 +213,10 @@ const Login = () => {
                                     required
                                     value={formData.email}
                                     onChange={handleChange}
-                                    className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
+                                    className={`block w-full pl-10 pr-3 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-300 transition-all bg-gray-50/50 ${
                                         errors.email
                                             ? 'border-red-300 bg-red-50'
-                                            : 'border-gray-300 hover:border-gray-400'
+                                            : 'border-gray-200 hover:border-gray-300'
                                     }`}
                                     placeholder="Enter your email"
                                 />
@@ -243,10 +243,10 @@ const Login = () => {
                                     required
                                     value={formData.password}
                                     onChange={handleChange}
-                                    className={`block w-full pl-10 pr-10 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
+                                    className={`block w-full pl-10 pr-10 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-300 transition-all bg-gray-50/50 ${
                                         errors.password
                                             ? 'border-red-300 bg-red-50'
-                                            : 'border-gray-300 hover:border-gray-400'
+                                            : 'border-gray-200 hover:border-gray-300'
                                     }`}
                                     placeholder="Enter your password"
                                 />
@@ -294,7 +294,7 @@ const Login = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="w-full flex items-center justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow"
                         >
                             {loading ? (
                                 <ButtonLoader className="mr-2" />

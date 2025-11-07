@@ -65,7 +65,7 @@ const PublicRoute = ({ children }) => {
 // Main App Component
 const AppContent = () => {
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="min-h-screen bg-gray-50/50 flex flex-col">
             <Header />
             <main className="flex-1">
                 <Routes>

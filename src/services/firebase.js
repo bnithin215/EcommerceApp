@@ -3,6 +3,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
+import { getAnalytics, isSupported } from 'firebase/analytics';
 
 // Enhanced Firebase configuration with validation
 const firebaseConfig = {
@@ -11,7 +12,9 @@ const firebaseConfig = {
     projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
     storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.REACT_APP_FIREBASE_APP_ID
+    appId: process.env.REACT_APP_FIREBASE_APP_ID,
+    measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
+    databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL
 };
 
 // Validate Firebase configuration
@@ -28,8 +31,19 @@ const validateFirebaseConfig = () => {
     const missingFields = requiredFields.filter(field => !firebaseConfig[field]);
 
     if (missingFields.length > 0) {
-        console.error('Missing Firebase configuration fields:', missingFields);
-        console.error('Please check your .env file and ensure all REACT_APP_FIREBASE_* variables are set');
+        console.error('❌ Missing Firebase configuration fields:', missingFields);
+        console.error('📝 To configure Firebase:');
+        console.error('   1. Create a .env file in the root directory');
+        console.error('   2. Add your Firebase configuration:');
+        console.error('      REACT_APP_FIREBASE_API_KEY=your_api_key');
+        console.error('      REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com');
+        console.error('      REACT_APP_FIREBASE_PROJECT_ID=your-project-id');
+        console.error('      REACT_APP_FIREBASE_STORAGE_BUCKET=your-project.appspot.com');
+        console.error('      REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id');
+        console.error('      REACT_APP_FIREBASE_APP_ID=your_app_id');
+        console.error('   3. Get these values from: https://console.firebase.google.com/');
+        console.error('   4. Restart your development server after creating .env');
+        console.warn('⚠️  App will run in demo mode without Firebase features (login, cart, etc.)');
         return false;
     }
 
@@ -38,7 +52,7 @@ const validateFirebaseConfig = () => {
 };
 
 // Initialize Firebase with error handling
-let app, db, auth, storage;
+let app, db, auth, storage, analytics;
 
 try {
     if (!validateFirebaseConfig()) {
@@ -53,21 +67,57 @@ try {
     auth = getAuth(app);
     storage = getStorage(app);
 
+    // Initialize Analytics (only in browser environment)
+    if (typeof window !== 'undefined') {
+        isSupported().then((supported) => {
+            if (supported) {
+                analytics = getAnalytics(app);
+                console.log('Firebase Analytics initialized');
+            } else {
+                console.log('Firebase Analytics not supported in this environment');
+            }
+        }).catch((error) => {
+            console.warn('Firebase Analytics initialization failed:', error);
+        });
+    }
+
     // Connect to emulators in development (optional)
     if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_USE_FIREBASE_EMULATOR === 'true') {
         console.log('🔧 Connecting to Firebase emulators...');
 
-        // Only connect if not already connected
-        if (!auth._delegate._config.emulator) {
-            connectAuthEmulator(auth, 'http://localhost:9099');
-        }
+        try {
+            // Only connect if not already connected - use try-catch for safety
+            try {
+                if (auth?._delegate?._config?.emulator) {
+                    console.log('Auth emulator already connected');
+                } else {
+                    connectAuthEmulator(auth, 'http://localhost:9099');
+                }
+            } catch (authError) {
+                console.warn('Could not connect to Auth emulator:', authError.message);
+            }
 
-        if (!db._delegate._databaseId.projectId.includes('demo-')) {
-            connectFirestoreEmulator(db, 'localhost', 8080);
-        }
+            try {
+                if (db?._delegate?._databaseId?.projectId?.includes('demo-')) {
+                    console.log('Firestore emulator already connected');
+                } else {
+                    connectFirestoreEmulator(db, 'localhost', 8080);
+                }
+            } catch (dbError) {
+                console.warn('Could not connect to Firestore emulator:', dbError.message);
+            }
 
-        if (!storage._delegate._host.includes('localhost')) {
-            connectStorageEmulator(storage, 'localhost', 9199);
+            try {
+                if (storage?._delegate?._host?.includes('localhost')) {
+                    console.log('Storage emulator already connected');
+                } else {
+                    connectStorageEmulator(storage, 'localhost', 9199);
+                }
+            } catch (storageError) {
+                console.warn('Could not connect to Storage emulator:', storageError.message);
+            }
+        } catch (error) {
+            console.warn('Error connecting to emulators:', error.message);
         }
     }
 
@@ -78,8 +128,14 @@ try {
 } catch (error) {
     console.error('💥 Firebase initialization failed:', error);
 
-    // Create mock objects for development
+    // Create mock objects for development with proper error handling
     console.warn('🔄 Creating mock Firebase objects for development...');
+    console.warn('⚠️  IMPORTANT: Firebase is not configured. The app will work in demo mode:');
+    console.warn('   ✅ Products can be viewed (using fallback data)');
+    console.warn('   ❌ User authentication will not work');
+    console.warn('   ❌ Shopping cart will not persist');
+    console.warn('   ❌ Orders cannot be placed');
+    console.warn('   📝 To enable full features, configure Firebase in your .env file');
 
     db = {
         _isMock: true,
@@ -88,12 +144,19 @@ try {
 
     auth = {
         _isMock: true,
-        currentUser: null
+        currentUser: null,
+        // Provide a mock onAuthStateChanged to prevent errors
+        onAuthStateChanged: () => {
+            console.warn('Firebase Auth is mocked. onAuthStateChanged is not functional.');
+            return () => {}; // Return empty unsubscribe function
+        }
     };
 
     storage = {
         _isMock: true
     };
+
+    analytics = null;
 }
 
 // Utility function to check if Firebase is ready
@@ -174,4 +237,4 @@ export const testFirebaseConnection = async () => {
     }
 };
 
-export { app, db, auth, storage };
+export { app, db, auth, storage, analytics };

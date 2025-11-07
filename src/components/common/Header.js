@@ -53,7 +53,7 @@ const Header = () => {
     };
 
     return (
-        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 sticky top-0 z-50">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Top Bar */}
                 <div className="flex items-center justify-between h-16">
@@ -65,7 +65,7 @@ const Header = () => {
                                 alt="Srija Collections Logo"
                                 className="w-8 h-8 rounded-full object-cover"
                             />
-                            <span className="font-bold text-xl text-gray-900 hidden sm:block">{COMPANY_INFO.name}</span>
+                            <span className="font-bold text-xl text-gray-900 tracking-tight hidden sm:block">{COMPANY_INFO.name}</span>
                         </Link>
                     </div>
 
@@ -80,11 +80,11 @@ const Header = () => {
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Search for sarees..."
-                                    className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                    className="w-full pl-4 pr-10 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-300 bg-gray-50/50 transition-all"
                                 />
                                 <button
                                     type="submit"
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-pink-600"
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-pink-600 transition-colors"
                                 >
                                     <Search className="h-5 w-5" />
                                 </button>
@@ -103,11 +103,11 @@ const Header = () => {
                         {user && (
                             <Link
                                 to="/wishlist"
-                                className="relative text-gray-600 hover:text-pink-600 transition-colors"
+                                className="relative p-2 text-gray-600 hover:text-pink-600 hover:bg-pink-50 rounded-lg transition-all"
                             >
-                                <Heart className="h-6 w-6" />
+                                <Heart className="h-5 w-5" />
                                 {wishlistItems?.length > 0 && (
-                                    <span className="absolute -top-2 -right-2 bg-pink-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                    <span className="absolute -top-1 -right-1 bg-pink-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
                                         {wishlistItems.length}
                                     </span>
                                 )}
@@ -117,11 +117,11 @@ const Header = () => {
                         {/* Cart */}
                         <button
                             onClick={() => setIsCartOpen(true)}
-                            className="relative text-gray-600 hover:text-pink-600 transition-colors"
+                            className="relative p-2 text-gray-600 hover:text-pink-600 hover:bg-pink-50 rounded-lg transition-all"
                         >
-                            <ShoppingCart className="h-6 w-6" />
+                            <ShoppingCart className="h-5 w-5" />
                             {cartItems?.length > 0 && (
-                                <span className="absolute -top-2 -right-2 bg-pink-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                <span className="absolute -top-1 -right-1 bg-pink-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
                                     {cartItems.length}
                                 </span>
                             )}
@@ -132,9 +132,9 @@ const Header = () => {
                             <div className="relative">
                                 <button
                                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                                    className="flex items-center space-x-2 text-gray-600 hover:text-pink-600 transition-colors"
+                                    className="flex items-center space-x-2 p-2 text-gray-600 hover:text-pink-600 hover:bg-pink-50 rounded-lg transition-all"
                                 >
-                                    <User className="h-6 w-6" />
+                                    <User className="h-5 w-5" />
                                     <span className="hidden md:block text-sm font-medium">
                                         {userProfile?.firstName || user.displayName?.split(' ')[0] || 'User'}
                                     </span>
@@ -142,29 +142,29 @@ const Header = () => {
 
                                 {/* User Dropdown */}
                                 {isUserMenuOpen && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                                        <div className="px-4 py-2 border-b border-gray-200">
-                                            <p className="text-sm font-medium text-gray-900">
+                                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                                        <div className="px-4 py-3 border-b border-gray-100">
+                                            <p className="text-sm font-semibold text-gray-900">
                                                 {userProfile?.displayName || user.displayName}
                                             </p>
-                                            <p className="text-sm text-gray-500">{user.email}</p>
+                                            <p className="text-xs text-gray-500 mt-0.5">{user.email}</p>
                                         </div>
 
                                         <Link
                                             to="/profile"
                                             onClick={() => setIsUserMenuOpen(false)}
-                                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                            className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition-colors"
                                         >
-                                            <Settings className="h-4 w-4 mr-2" />
+                                            <Settings className="h-4 w-4 mr-3" />
                                             Profile Settings
                                         </Link>
 
                                         <Link
                                             to="/orders"
                                             onClick={() => setIsUserMenuOpen(false)}
-                                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                            className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition-colors"
                                         >
-                                            <Package className="h-4 w-4 mr-2" />
+                                            <Package className="h-4 w-4 mr-3" />
                                             My Orders
                                         </Link>
 
@@ -172,18 +172,18 @@ const Header = () => {
                                             <Link
                                                 to="/admin"
                                                 onClick={() => setIsUserMenuOpen(false)}
-                                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                                className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition-colors"
                                             >
-                                                <Settings className="h-4 w-4 mr-2" />
+                                                <Settings className="h-4 w-4 mr-3" />
                                                 Admin Panel
                                             </Link>
                                         )}
 
                                         <button
                                             onClick={handleLogout}
-                                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                            className="flex items-center w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors mt-1"
                                         >
-                                            <LogOut className="h-4 w-4 mr-2" />
+                                            <LogOut className="h-4 w-4 mr-3" />
                                             Sign Out
                                         </button>
                                     </div>
@@ -199,7 +199,7 @@ const Header = () => {
                                 </Link>
                                 <Link
                                     to="/register"
-                                    className="bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition-colors"
+                                    className="bg-pink-600 text-white px-4 py-2 rounded-xl hover:bg-pink-700 transition-all shadow-sm hover:shadow"
                                 >
                                     Register
                                 </Link>
@@ -217,12 +217,12 @@ const Header = () => {
                 </div>
 
                 {/* Navigation Categories - Desktop */}
-                <div className="hidden md:flex items-center space-x-8 py-4 border-t border-gray-200">
+                <div className="hidden md:flex items-center space-x-1 py-3 border-t border-gray-100">
                     {PRODUCT_CATEGORIES.slice(1).map((category) => (
                         <button
                             key={category.id}
                             onClick={() => handleCategoryClick(category.slug)}
-                            className="text-gray-600 hover:text-pink-600 font-medium transition-colors"
+                            className="px-4 py-2 text-sm text-gray-600 hover:text-pink-600 hover:bg-pink-50 font-medium rounded-lg transition-all"
                         >
                             {category.name}
                         </button>
@@ -241,7 +241,7 @@ const Header = () => {
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         placeholder="Search for sarees..."
-                                        className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                        className="w-full pl-4 pr-10 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-300 bg-gray-50/50 transition-all"
                                     />
                                     <button
                                         type="submit"

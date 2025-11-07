@@ -359,11 +359,11 @@ const Home = () => {
             </section>
 
             {/* Shop by Categories */}
-            <section className="py-20 bg-white">
+            <section className="py-24 bg-white">
                 <div className="container mx-auto px-4">
-                    <div className="text-center mb-16">
-                        <h2 className="text-4xl font-bold text-gray-900 mb-4">Shop by Category</h2>
-                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                    <div className="text-center mb-20">
+                        <h2 className="text-4xl font-bold text-gray-900 mb-4 tracking-tight">Shop by Category</h2>
+                        <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
                             Discover our diverse collection of sarees, each carefully curated for different occasions and styles
                         </p>
                     </div>
@@ -375,7 +375,7 @@ const Home = () => {
                                 <div
                                     key={category.id}
                                     onClick={() => handleCategoryClick(category.slug)}
-                                    className="group relative overflow-hidden rounded-xl bg-white shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:scale-105"
+                                    className="group relative overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-lg border border-gray-100 transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
                                 >
                                     <div className="aspect-w-16 aspect-h-9">
                                         <img
@@ -385,27 +385,27 @@ const Home = () => {
                                         />
                                     </div>
                                     <div className="p-6">
-                                        <div className="flex items-center mb-3">
-                                            <div className="p-2 bg-pink-100 rounded-lg mr-3">
+                                        <div className="flex items-center mb-4">
+                                            <div className="p-2.5 bg-pink-50 rounded-xl mr-3">
                                                 <IconComponent className="h-6 w-6 text-pink-600" />
                                             </div>
                                             <div>
-                                                <h3 className="text-xl font-bold text-gray-900">{category.name}</h3>
-                                                <p className="text-sm text-gray-600">{category.description}</p>
+                                                <h3 className="text-xl font-bold text-gray-900 mb-1">{category.name}</h3>
+                                                <p className="text-sm text-gray-500">{category.description}</p>
                                             </div>
                                         </div>
-                                        <p className="text-sm text-pink-600 font-medium mb-2">{category.priceRange}</p>
-                                        <div className="flex flex-wrap gap-1">
+                                        <p className="text-sm text-pink-600 font-semibold mb-3">{category.priceRange}</p>
+                                        <div className="flex flex-wrap gap-1.5">
                                             {category.subCategories.slice(0, 3).map((sub, index) => (
                                                 <span
                                                     key={index}
-                                                    className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
+                                                    className="text-xs bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full font-medium"
                                                 >
                                                     {sub}
                                                 </span>
                                             ))}
                                             {category.subCategories.length > 3 && (
-                                                <span className="text-xs text-gray-500">+{category.subCategories.length - 3} more</span>
+                                                <span className="text-xs text-gray-500 font-medium">+{category.subCategories.length - 3} more</span>
                                             )}
                                         </div>
                                     </div>
@@ -417,11 +417,11 @@ const Home = () => {
             </section>
 
             {/* Shop by Features */}
-            <section className="py-20 bg-gray-50">
+            <section className="py-24 bg-gray-50/50">
                 <div className="container mx-auto px-4">
-                    <div className="text-center mb-16">
-                        <h2 className="text-4xl font-bold text-gray-900 mb-4">Shop by Features</h2>
-                        <p className="text-lg text-gray-600">
+                    <div className="text-center mb-20">
+                        <h2 className="text-4xl font-bold text-gray-900 mb-4 tracking-tight">Shop by Features</h2>
+                        <p className="text-lg text-gray-600 leading-relaxed">
                             Find your perfect saree with our advanced filtering options
                         </p>
                     </div>
@@ -432,18 +432,18 @@ const Home = () => {
                             return (
                                 <div
                                     key={index}
-                                    className={`${feature.bgColor} rounded-xl p-6 hover:shadow-lg transition-shadow`}
+                                    className={`${feature.bgColor} rounded-2xl p-6 hover:shadow-lg border border-transparent hover:border-gray-200 transition-all`}
                                 >
-                                    <div className="flex items-center mb-4">
+                                    <div className="flex items-center mb-5">
                                         <IconComponent className={`h-6 w-6 ${feature.iconColor} mr-3`} />
                                         <h3 className="text-lg font-semibold text-gray-900">{feature.title}</h3>
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="space-y-2.5">
                                         {feature.items.map((item, itemIndex) => (
                                             <button
                                                 key={itemIndex}
                                                 onClick={() => handleFeatureClick(feature, item)}
-                                                className="block w-full text-left text-sm text-gray-700 hover:text-pink-600 transition-colors"
+                                                className="block w-full text-left text-sm text-gray-700 hover:text-pink-600 transition-colors font-medium py-1"
                                             >
                                                 {item}
                                             </button>
@@ -457,11 +457,11 @@ const Home = () => {
             </section>
 
             {/* Regional Collections */}
-            <section className="py-20 bg-white">
+            <section className="py-24 bg-white">
                 <div className="container mx-auto px-4">
-                    <div className="text-center mb-16">
-                        <h2 className="text-4xl font-bold text-gray-900 mb-4">Regional Collections</h2>
-                        <p className="text-lg text-gray-600">
+                    <div className="text-center mb-20">
+                        <h2 className="text-4xl font-bold text-gray-900 mb-4 tracking-tight">Regional Collections</h2>
+                        <p className="text-lg text-gray-600 leading-relaxed">
                             Authentic sarees from India's rich textile heritage
                         </p>
                     </div>
@@ -471,7 +471,7 @@ const Home = () => {
                             <Link
                                 key={index}
                                 to={`/products?region=${collection.slug}`}
-                                className="group block bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow overflow-hidden"
+                                className="group block bg-white rounded-2xl shadow-sm hover:shadow-lg border border-gray-100 transition-all overflow-hidden transform hover:-translate-y-1"
                             >
                                 <div className="aspect-w-16 aspect-h-10">
                                     <img
@@ -492,14 +492,14 @@ const Home = () => {
             </section>
 
             {/* Featured Products Section */}
-            <section className="py-16 bg-gray-50">
+            <section className="py-20 bg-gray-50/50">
                 <div className="container mx-auto px-4">
-                    <div className="flex justify-between items-center mb-12">
+                    <div className="flex justify-between items-center mb-16">
                         <div>
-                            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3 tracking-tight">
                                 Featured Products
                             </h2>
-                            <p className="text-lg text-gray-600">
+                            <p className="text-lg text-gray-600 leading-relaxed">
                                 Handpicked collection of our best sarees
                             </p>
                         </div>

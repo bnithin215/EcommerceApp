@@ -9,4 +9,8 @@
 /dataSources/
 /dataSources.local.xml
 /node_modules
+.idea.env
+.env
+.firebase
 .idea
+build

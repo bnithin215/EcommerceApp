@@ -243,12 +243,12 @@ const ProductCard = ({ product, className = "", variant = "default" }) => {
     // Default card variant with enhanced design
     return (
         <div
-            className={`group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 product-card ${className}`}
+            className={`group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 product-card ${className}`}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
             {/* Image Container with fixed aspect ratio */}
-            <div className="relative w-full h-64 bg-gray-100 overflow-hidden">
+            <div className="relative w-full h-64 bg-gray-50 overflow-hidden">
                 {imageLoading && (
                     <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse" />
                 )}
@@ -277,25 +277,25 @@ const ProductCard = ({ product, className = "", variant = "default" }) => {
                 {/* Overlay badges */}
                 <div className="absolute top-3 left-3 space-y-2">
                     {discount > 0 && (
-                        <span className="inline-block bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+                        <span className="inline-block bg-red-500 text-white text-xs font-semibold px-2.5 py-1 rounded-lg shadow-sm">
                             -{discount}% OFF
                         </span>
                     )}
 
                     {product.featured && (
-                        <span className="block bg-yellow-500 text-white text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+                        <span className="block bg-yellow-500 text-white text-xs font-semibold px-2.5 py-1 rounded-lg shadow-sm">
                             Featured
                         </span>
                     )}
 
                     {product.inStock <= 5 && product.inStock > 0 && (
-                        <span className="block bg-orange-500 text-white text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+                        <span className="block bg-orange-500 text-white text-xs font-semibold px-2.5 py-1 rounded-lg shadow-sm">
                             Only {product.inStock} left
                         </span>
                     )}
 
                     {product.inStock <= 0 && (
-                        <span className="block bg-gray-500 text-white text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+                        <span className="block bg-gray-600 text-white text-xs font-semibold px-2.5 py-1 rounded-lg shadow-sm">
                             Out of Stock
                         </span>
                     )}
@@ -305,7 +305,7 @@ const ProductCard = ({ product, className = "", variant = "default" }) => {
                 <div className="absolute top-3 right-3 space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <button
                         onClick={handleWishlistToggle}
-                        className={`p-2.5 rounded-full bg-white/90 backdrop-blur-sm shadow-md hover:bg-white transition-all ${
+                        className={`p-2.5 rounded-xl bg-white/95 backdrop-blur-sm shadow-md hover:bg-white transition-all ${
                             isInWishlist
                                 ? 'text-red-500'
                                 : 'text-gray-600 hover:text-red-500'
@@ -316,7 +316,7 @@ const ProductCard = ({ product, className = "", variant = "default" }) => {
 
                     <button
                         onClick={handleQuickView}
-                        className="p-2.5 rounded-full bg-white/90 backdrop-blur-sm shadow-md text-gray-600 hover:text-pink-600 hover:bg-white transition-all"
+                        className="p-2.5 rounded-xl bg-white/95 backdrop-blur-sm shadow-md text-gray-600 hover:text-pink-600 hover:bg-white transition-all"
                     >
                         <Eye className="h-4 w-4" />
                     </button>
@@ -326,7 +326,7 @@ const ProductCard = ({ product, className = "", variant = "default" }) => {
                 {isHovered && product.inStock > 0 && (
                     <button
                         onClick={handleAddToCart}
-                        className="absolute bottom-3 left-3 right-3 bg-pink-600 text-white py-2 px-4 rounded-lg hover:bg-pink-700 transition-all duration-300 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 font-medium text-sm"
+                        className="absolute bottom-3 left-3 right-3 bg-pink-600 text-white py-2.5 px-4 rounded-xl hover:bg-pink-700 transition-all duration-300 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 font-medium text-sm shadow-lg"
                     >
                         Quick Add to Cart
                     </button>
@@ -334,15 +334,15 @@ const ProductCard = ({ product, className = "", variant = "default" }) => {
             </div>
 
             {/* Product Details */}
-            <div className="p-4">
+            <div className="p-5">
                 <Link to={`/products/${product.id}`} className="block">
                     {/* Category and Tags */}
-                    <div className="flex items-center justify-between mb-2">
-                        <div className="flex flex-wrap gap-1">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex flex-wrap gap-1.5">
                             {getProductTags().map((tag, index) => (
                                 <span
                                     key={index}
-                                    className="inline-block text-xs text-pink-600 bg-pink-50 px-2 py-1 rounded-full"
+                                    className="inline-block text-xs text-pink-600 bg-pink-50 px-2.5 py-1 rounded-full font-medium"
                                 >
                                     {tag}
                                 </span>
@@ -366,7 +366,7 @@ const ProductCard = ({ product, className = "", variant = "default" }) => {
                     </div>
 
                     {/* Title */}
-                    <h3 className="font-semibold text-gray-900 text-sm mb-2 line-clamp-2 min-h-[2.5rem] hover:text-pink-600 transition-colors">
+                    <h3 className="font-semibold text-gray-900 text-base mb-2.5 line-clamp-2 min-h-[3rem] hover:text-pink-600 transition-colors leading-snug">
                         {product.name}
                     </h3>
 
@@ -375,30 +375,30 @@ const ProductCard = ({ product, className = "", variant = "default" }) => {
                         <div className="flex space-x-0.5">
                             {renderRating()}
                         </div>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-xs text-gray-500">
                             ({product.reviews || 0})
                         </span>
                         {product.rating >= 4.5 && (
-                            <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
                                 Top Rated
                             </span>
                         )}
                     </div>
 
                     {/* Price */}
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center space-x-2">
-                            <span className="text-lg font-bold text-gray-900">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2.5">
+                            <span className="text-xl font-bold text-gray-900">
                                 {formatCurrency(product.price)}
                             </span>
                             {product.originalPrice && product.originalPrice > product.price && (
-                                <span className="text-sm text-gray-500 line-through">
+                                <span className="text-sm text-gray-400 line-through">
                                     {formatCurrency(product.originalPrice)}
                                 </span>
                             )}
                         </div>
                         {discount > 0 && (
-                            <span className="text-sm font-medium text-green-600">
+                            <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded">
                                 Save {formatCurrency(product.originalPrice - product.price)}
                             </span>
                         )}
@@ -406,22 +406,22 @@ const ProductCard = ({ product, className = "", variant = "default" }) => {
                 </Link>
 
                 {/* Stock status and shipping */}
-                <div className="flex items-center justify-between mb-3 text-sm">
+                <div className="flex items-center justify-between mb-4 text-sm">
                     <div>
                         {product.inStock > 0 ? (
                             <span className="text-green-600 font-medium flex items-center">
-                                <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                                <div className="w-2 h-2 bg-green-500 rounded-full mr-1.5"></div>
                                 In Stock
                             </span>
                         ) : (
                             <span className="text-red-600 font-medium flex items-center">
-                                <div className="w-2 h-2 bg-red-500 rounded-full mr-1"></div>
+                                <div className="w-2 h-2 bg-red-500 rounded-full mr-1.5"></div>
                                 Out of Stock
                             </span>
                         )}
                     </div>
                     <div className="flex items-center text-gray-500">
-                        <Truck className="h-3 w-3 mr-1" />
+                        <Truck className="h-3.5 w-3.5 mr-1" />
                         <span className="text-xs">Free shipping</span>
                     </div>
                 </div>
@@ -430,7 +430,7 @@ const ProductCard = ({ product, className = "", variant = "default" }) => {
                 <button
                     onClick={handleAddToCart}
                     disabled={product.inStock <= 0}
-                    className="w-full bg-pink-600 text-white py-2.5 px-4 rounded-lg hover:bg-pink-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 font-medium"
+                    className="w-full bg-pink-600 text-white py-3 px-4 rounded-xl hover:bg-pink-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all flex items-center justify-center space-x-2 font-medium shadow-sm hover:shadow"
                 >
                     <ShoppingCart className="h-4 w-4" />
                     <span>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, Heart, ShoppingCart, Minus, Plus, Share2, ArrowLeft } from 'lucide-react';
+import { Star, Heart, ShoppingCart, Minus, Plus, Share2, ArrowLeft, ZoomIn, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { productAPI } from '../services/api';
@@ -20,6 +20,7 @@ const ProductDetails = () => {
     const [selectedImage, setSelectedImage] = useState(0);
     const [quantity, setQuantity] = useState(1);
     const [relatedProducts, setRelatedProducts] = useState([]);
+    const [imageZoomed, setImageZoomed] = useState(false);
 
     // Check if product is in wishlist
     const isInWishlist = wishlistItems.some(item => item.id === id);
@@ -174,31 +175,41 @@ const ProductDetails = () => {
                     {/* Product Images */}
                     <div className="space-y-4">
                         {/* Main Image */}
-                        <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-lg">
-                            <img
-                                src={getImageUrl(images[selectedImage])}
-                                alt={product.name}
-                                className="w-full h-full object-cover"
-                            />
+                        <div className="relative bg-gray-50 rounded-xl overflow-hidden shadow-lg border border-gray-100 group cursor-pointer" onClick={() => setImageZoomed(true)}>
+                            <div className="flex items-center justify-center min-h-[500px] w-full">
+                                <img
+                                    src={getImageUrl(images[selectedImage])}
+                                    alt={product.name}
+                                    className="max-w-full max-h-[80vh] w-auto h-auto object-contain"
+                                />
+                            </div>
+                            {/* Zoom Indicator */}
+                            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm rounded-lg p-2.5 shadow-md">
+                                <ZoomIn className="h-5 w-5 text-gray-700" />
+                            </div>
+                            {/* Click hint */}
+                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 text-white text-xs px-3 py-1.5 rounded-lg">
+                                Click to view full size
+                            </div>
                         </div>
 
                         {/* Thumbnail Images */}
                         {images.length > 1 && (
-                            <div className="grid grid-cols-4 gap-2">
+                            <div className="grid grid-cols-4 gap-3">
                                 {images.map((image, index) => (
                                     <button
                                         key={index}
                                         onClick={() => setSelectedImage(index)}
-                                        className={`aspect-square rounded-lg overflow-hidden border-2 ${
+                                        className={`rounded-xl overflow-hidden border-2 transition-all ${
                                             selectedImage === index
-                                                ? 'border-pink-600'
-                                                : 'border-gray-200'
+                                                ? 'border-pink-600 ring-2 ring-pink-200'
+                                                : 'border-gray-200 hover:border-gray-300'
                                         }`}
                                     >
                                         <img
                                             src={getImageUrl(image)}
                                             alt={`${product.name} ${index + 1}`}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-20 object-contain bg-gray-50"
                                         />
                                     </button>
                                 ))}
@@ -361,6 +372,51 @@ const ProductDetails = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Image Zoom Modal */}
+                {imageZoomed && (
+                    <div 
+                        className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+                        onClick={() => setImageZoomed(false)}
+                    >
+                        <button
+                            onClick={() => setImageZoomed(false)}
+                            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors bg-black/50 rounded-full p-2"
+                        >
+                            <X className="h-6 w-6" />
+                        </button>
+                        <div className="max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                            <img
+                                src={getImageUrl(images[selectedImage])}
+                                alt={product.name}
+                                className="max-w-full max-h-full object-contain"
+                            />
+                        </div>
+                        {/* Navigation arrows in zoom view */}
+                        {images.length > 1 && (
+                            <>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedImage((prev) => (prev - 1 + images.length) % images.length);
+                                    }}
+                                    className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors bg-black/50 rounded-full p-3"
+                                >
+                                    <ArrowLeft className="h-6 w-6" />
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedImage((prev) => (prev + 1) % images.length);
+                                    }}
+                                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors bg-black/50 rounded-full p-3 rotate-180"
+                                >
+                                    <ArrowLeft className="h-6 w-6" />
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
 
                 {/* Related Products */}
                 {relatedProducts.length > 0 && (

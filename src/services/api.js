@@ -24,6 +24,9 @@ import {
     deleteObject
 } from 'firebase/storage';
 
+// Fallback products data
+import fallbackProducts from '../products.json';
+
 // Utility functions
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -40,8 +43,112 @@ class ProductAPI {
 
     // Replace your getAllProducts method in frontend/src/services/api.js with this fixed version
 
+    // Helper function to transform fallback products to match expected format
+    transformFallbackProduct(product, index) {
+        // Map category names to slugs
+        const categoryMap = {
+            'Silk Sarees': 'silk',
+            'Cotton Sarees': 'cotton',
+            'Designer Sarees': 'designer',
+            'Wedding Collection': 'wedding',
+            'Party Wear': 'party',
+            'Casual Wear': 'casual'
+        };
+
+        return {
+            id: `fallback-${index}`,
+            name: product.name,
+            category: categoryMap[product.category] || product.category?.toLowerCase() || 'all',
+            price: product.price,
+            originalPrice: product.originalPrice || product.price,
+            image: product.imageUrl,
+            images: [product.imageUrl],
+            description: `${product.name} - ${product.occasion || 'Elegant'} ${product.category}`,
+            inStock: 10,
+            rating: 4.5,
+            reviews: Math.floor(Math.random() * 50) + 10,
+            color: product.color,
+            size: product.size,
+            weight: product.weight,
+            occasion: product.occasion,
+            features: product.features || [],
+            fabric: product.category?.includes('Silk') ? 'Silk' : product.category?.includes('Cotton') ? 'Cotton' : 'Georgette',
+            sku: `SKU-${Date.now()}-${index}`,
+            createdAt: new Date(),
+            featured: index < 4
+        };
+    }
+
+    // Helper function to load fallback products
+    loadFallbackProducts(filters = {}) {
+        console.log('Loading fallback products from products.json...');
+        
+        let products = fallbackProducts.map((product, index) => 
+            this.transformFallbackProduct(product, index)
+        );
+
+        // Apply filters
+        if (filters.category && filters.category !== 'all') {
+            products = products.filter(p => p.category === filters.category);
+        }
+
+        if (filters.search) {
+            const searchTerm = filters.search.toLowerCase();
+            products = products.filter(p =>
+                p.name.toLowerCase().includes(searchTerm) ||
+                p.description.toLowerCase().includes(searchTerm) ||
+                p.category.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        if (filters.fabric) {
+            products = products.filter(p => 
+                p.fabric?.toLowerCase() === filters.fabric.toLowerCase()
+            );
+        }
+
+        if (filters.occasion) {
+            products = products.filter(p => 
+                p.occasion?.toLowerCase().includes(filters.occasion.toLowerCase())
+            );
+        }
+
+        if (filters.color) {
+            products = products.filter(p => 
+                p.color?.toLowerCase() === filters.color.toLowerCase()
+            );
+        }
+
+        if (filters.minPrice) {
+            products = products.filter(p => p.price >= parseFloat(filters.minPrice));
+        }
+
+        if (filters.maxPrice) {
+            products = products.filter(p => p.price <= parseFloat(filters.maxPrice));
+        }
+
+        // Apply sorting
+        if (filters.sortBy) {
+            products = this.sortProductsClientSide(products, filters.sortBy);
+        }
+
+        console.log(`Loaded ${products.length} fallback products`);
+        return {
+            products,
+            total: products.length
+        };
+    }
+
     async getAllProducts(filters = {}) {
         try {
+            // Check if Firestore is properly initialized
+            if (!db || db._isMock) {
+                console.warn('⚠️ Firebase Firestore is not initialized.');
+                console.warn('📦 Using fallback products from products.json');
+                console.warn('💡 To enable Firebase, check your .env file configuration');
+                return this.loadFallbackProducts(filters);
+            }
+
             console.log('Loading products with filters:', filters);
 
             let q = collection(db, this.collectionName);
@@ -129,6 +236,12 @@ class ProductAPI {
 
             console.log(`Fetched ${products.length} products from Firestore`);
 
+            // If no products found and we're not filtering, try fallback
+            if (products.length === 0 && (!filters.category || filters.category === 'all') && !filters.search) {
+                console.warn('⚠️ No products found in Firebase. Using fallback products...');
+                return this.loadFallbackProducts(filters);
+            }
+
             // Apply client-side sorting if we couldn't sort server-side due to index limitations
             if (filters.category && filters.category !== 'all' && filters.sortBy) {
                 products = this.sortProductsClientSide(products, filters.sortBy);
@@ -140,7 +253,7 @@ class ProductAPI {
                 const searchTerm = filters.search.toLowerCase();
                 products = products.filter(product =>
                     product.name.toLowerCase().includes(searchTerm) ||
-                    product.description.toLowerCase().includes(searchTerm) ||
+                    product.description?.toLowerCase().includes(searchTerm) ||
                     product.category.toLowerCase().includes(searchTerm)
                 );
                 console.log(`Applied search filter: ${filters.search}, found ${products.length} results`);
@@ -179,20 +292,21 @@ class ProductAPI {
                         fallbackProducts = this.sortProductsClientSide(fallbackProducts, filters.sortBy);
                     }
 
-                    console.log(`Fallback query successful: ${fallbackProducts.length} products`);
-
-                    return {
-                        products: fallbackProducts,
-                        total: fallbackProducts.length
-                    };
-
+                    if (fallbackProducts.length > 0) {
+                        console.log(`Fallback query successful: ${fallbackProducts.length} products`);
+                        return {
+                            products: fallbackProducts,
+                            total: fallbackProducts.length
+                        };
+                    }
                 } catch (fallbackError) {
                     console.error('Fallback query also failed:', fallbackError);
-                    handleApiError(fallbackError, 'fetch products (fallback)');
                 }
             }
 
-            handleApiError(error, 'fetch products');
+            // Final fallback: Use JSON products
+            console.warn('⚠️ Firebase query failed. Using fallback products from products.json');
+            return this.loadFallbackProducts(filters);
         }
     }
 
@@ -228,6 +342,11 @@ class ProductAPI {
 
     async getProduct(id) {
         try {
+            if (!db || db._isMock) {
+                console.warn('Firebase Firestore is not initialized. Cannot fetch product.');
+                throw new Error('Firebase is not properly configured');
+            }
+
             const docRef = doc(db, this.collectionName, id);
             const docSnap = await getDoc(docRef);
 
@@ -285,6 +404,14 @@ class ProductAPI {
 
     async getFeaturedProducts(limitCount = 8) {
         try {
+            // Check if Firestore is properly initialized
+            if (!db || db._isMock) {
+                console.warn('⚠️ Firebase Firestore is not initialized.');
+                console.warn('📦 Using fallback featured products from products.json');
+                const fallback = this.loadFallbackProducts({});
+                return fallback.products.slice(0, limitCount);
+            }
+
             console.log(' Fetching featured products from Firebase...');
 
             // Try to get products marked as featured
@@ -307,7 +434,7 @@ class ProductAPI {
             }
 
             // Fallback: If no products are marked as featured, get the latest products
-            console.log(' No featured products found, getting latest products...');
+            console.log(' No featured products found, trying latest products...');
 
             const fallbackQuery = query(
                 collection(db, this.collectionName),
@@ -321,8 +448,15 @@ class ProductAPI {
                 ...doc.data()
             }));
 
-            console.log(' Using latest products as featured:', latestProducts.length);
-            return latestProducts;
+            if (latestProducts.length > 0) {
+                console.log(' Using latest products as featured:', latestProducts.length);
+                return latestProducts;
+            }
+
+            // Final fallback: Use JSON products
+            console.log(' No products in Firebase, using fallback products...');
+            const fallback = this.loadFallbackProducts({});
+            return fallback.products.slice(0, limitCount);
 
         } catch (error) {
             console.error(' Error fetching featured products:', error);
@@ -347,16 +481,28 @@ class ProductAPI {
                     return simpleProducts;
                 } catch (fallbackError) {
                     console.error(' Fallback also failed:', fallbackError);
-                    throw new Error('Unable to fetch products from database');
+                    // Use JSON fallback
+                    console.warn('⚠️ Using fallback products from products.json');
+                    const fallback = this.loadFallbackProducts({});
+                    return fallback.products.slice(0, limitCount);
                 }
             }
 
-            throw new Error(`Failed to fetch featured products: ${error.message}`);
+            // Use JSON fallback on any other error
+            console.warn('⚠️ Firebase error occurred. Using fallback products from products.json');
+            const fallback = this.loadFallbackProducts({});
+            return fallback.products.slice(0, limitCount);
         }
     }
 
     async getProductsByCategory(category, limitCount = 20) {  // Changed parameter name
         try {
+            if (!db || db._isMock) {
+                console.warn('Firebase Firestore is not initialized. Using fallback products by category.');
+                const fallback = this.loadFallbackProducts({ category });
+                return fallback.products;
+            }
+
             const q = query(
                 collection(db, this.collectionName),
                 where('category', '==', category),
@@ -365,12 +511,24 @@ class ProductAPI {
             );
 
             const snapshot = await getDocs(q);
-            return snapshot.docs.map(doc => ({
+            const products = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
+
+            // If no products found, use fallback
+            if (products.length === 0) {
+                console.warn(`No products found in category ${category}. Using fallback products.`);
+                const fallback = this.loadFallbackProducts({ category });
+                return fallback.products;
+            }
+
+            return products;
         } catch (error) {
-            handleApiError(error, 'fetch products by category');
+            console.error('Error fetching products by category:', error);
+            console.warn('Using fallback products from products.json');
+            const fallback = this.loadFallbackProducts({ category });
+            return fallback.products;
         }
     }
     // Replace the searchProducts method in your ProductAPI class with this enhanced version

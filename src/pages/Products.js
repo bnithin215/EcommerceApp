@@ -206,8 +206,8 @@ const Products = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="min-h-screen bg-gray-50/50">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -240,7 +240,7 @@ const Products = () => {
 
                     {/* Filters Sidebar */}
                     <div className={`lg:w-64 ${showFilters ? 'block' : 'hidden lg:block'}`}>
-                        <div className="bg-white rounded-lg shadow-sm border p-6 space-y-6">
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
                             <div className="flex items-center justify-between">
                                 <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
                                 {getActiveFiltersCount() > 0 && (
@@ -400,7 +400,7 @@ const Products = () => {
                     {/* Products Content */}
                     <div className="flex-1">
                         {/* Sort and View Options */}
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 bg-white p-4 rounded-lg shadow-sm border">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 bg-white p-5 rounded-xl shadow-sm border border-gray-100">
                             <div className="flex items-center space-x-4 mb-4 sm:mb-0">
                                 <span className="text-sm text-gray-600">
                                     {totalProducts} product{totalProducts !== 1 ? 's' : ''} found
