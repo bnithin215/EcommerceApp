@@ -10,12 +10,22 @@ A modern React-based e-commerce platform specializing in women's clothing and sa
 
 ### Customer Features
 - **Product Catalog** - Browse and search through various categories of sarees and women's clothing
+- **Advanced Product Filtering** - Filter by category, fabric, occasion, color, and price range
+- **Product Pagination** - Optimized loading with pagination for better performance
 - **User Authentication** - Secure login/register with Firebase Auth
-- **Shopping Cart** - Add, remove, and manage products in cart
+- **Shopping Cart** - Add, remove, and manage products in cart with persistent storage
 - **Wishlist** - Save favorite products for later
+- **Checkout System** - Multi-step checkout with address management
+  - Country selection (US and India)
+  - Dynamic state dropdowns based on country
+  - Address validation with country-specific postal codes
+- **Payment Gateway** - Integrated Razorpay payment processing
+  - Supports UPI, Cards, Net Banking, and Wallets
+  - Secure payment processing with test mode support
 - **Order Management** - Place orders and track order history
 - **User Profile** - Manage personal information and preferences
 - **Responsive Design** - Optimized for desktop and mobile devices
+- **Image Optimization** - Lazy loading and optimized image handling
 
 ### Admin Features
 - **Dashboard** - Overview of key business metrics and analytics
@@ -38,10 +48,11 @@ A modern React-based e-commerce platform specializing in women's clothing and sa
 ## Tech Stack
 
 - **Frontend Framework**: React 18
-- **Routing**: React Router DOM
+- **Routing**: React Router DOM v6
 - **Styling**: Tailwind CSS with custom components
 - **Icons**: Lucide React
-- **Backend**: Firebase (Firestore, Auth, Storage)
+- **Backend**: Firebase (Firestore, Auth, Storage, Analytics)
+- **Payment Gateway**: Razorpay
 - **Notifications**: React Hot Toast
 - **Build Tool**: Create React App
 - **Package Manager**: npm
@@ -90,24 +101,59 @@ A modern React-based e-commerce platform specializing in women's clothing and sa
    ```
 
 3. **Environment Setup**
-   Create a `.env` file in the root directory:
+   Create a `.env` file in the root directory with the following configuration:
+   
+   **Firebase Configuration:**
    ```env
-   REACT_APP_FIREBASE_API_KEY=your_api_key
-   REACT_APP_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-   REACT_APP_FIREBASE_PROJECT_ID=your_project_id
-   REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-   REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   REACT_APP_FIREBASE_API_KEY=your_firebase_api_key
+   REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+   REACT_APP_FIREBASE_DATABASE_URL=https://your-project-default-rtdb.firebaseio.com
+   REACT_APP_FIREBASE_PROJECT_ID=your-project-id
+   REACT_APP_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+   REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
    REACT_APP_FIREBASE_APP_ID=your_app_id
-   REACT_APP_API_URL=http://localhost:5000/api
-   REACT_APP_RAZORPAY_KEY_ID=your_razorpay_key
+   REACT_APP_FIREBASE_MEASUREMENT_ID=your_measurement_id
    ```
+   
+   **Razorpay Configuration:**
+   ```env
+   REACT_APP_RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxx
+   REACT_APP_RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+   ```
+   
+   **Note:** 
+   - Get Firebase config from [Firebase Console](https://console.firebase.google.com/)
+   - Get Razorpay keys from [Razorpay Dashboard](https://dashboard.razorpay.com/)
+   - Razorpay Key Secret should only be used on backend (not in frontend)
+   - After creating/updating `.env`, **restart the development server**
 
 4. **Start the development server**
    ```bash
    npm start
    ```
 
+   **Important**: After creating or modifying the `.env` file, you **must restart** the development server for changes to take effect.
+
 The application will open at [http://localhost:3000](http://localhost:3000)
+
+### Troubleshooting
+
+#### Environment Variables Not Loading
+- Make sure `.env` file is in the root directory (same level as `package.json`)
+- Restart the development server after creating/modifying `.env`
+- Check browser console for configuration logs
+
+#### Payment Gateway Not Working
+- Verify Razorpay keys are correctly set in `.env`
+- Ensure keys start with `rzp_test_` for test mode
+- Check browser console for Razorpay configuration status
+- Restart server after adding Razorpay keys
+
+#### Firebase Connection Issues
+- Verify all Firebase environment variables are set
+- Check Firebase project settings in Firebase Console
+- Ensure Firestore rules allow read/write access
+- Check browser console for Firebase initialization logs
 
 ## Project Structure
 
@@ -197,11 +243,27 @@ The application uses Firebase Authentication with role-based access:
 ## Product Categories
 
 The platform supports various product categories:
-- Traditional Sarees
-- Designer Sarees
-- Casual Wear
-- Party Wear
-- And more...
+- **Silk Sarees** - Premium silk sarees
+- **Cotton Sarees** - Comfortable cotton sarees
+- **Designer Sarees** - Latest designer collections
+- **Wedding Collection** - Special wedding sarees
+- **Casual Wear** - Everyday casual sarees
+- **Party Wear** - Party and festive sarees
+
+## Checkout & Shipping
+
+### Supported Countries
+- **India** - All states and union territories
+- **United States** - All 50 states plus DC
+
+### Address Features
+- Country selection dropdown
+- Dynamic state/province dropdowns based on country
+- Country-specific postal code validation:
+  - India: 6-digit pincode
+  - US: 5-digit ZIP or 5+4 format
+- Phone number validation based on country
+- Separate billing and shipping addresses
 
 ## Responsive Design
 
@@ -214,7 +276,27 @@ The application is fully responsive and optimized for:
 
 - **Authentication State**: Managed via React Context (AuthContext)
 - **Shopping Cart**: Managed via React Context (CartContext)
-- **Component State**: React hooks (useState, useEffect)
+- **Component State**: React hooks (useState, useEffect, useCallback, useMemo)
+
+## Performance Optimizations
+
+### Product Loading
+- **Pagination**: Loads 20 products per page (configurable)
+- **Smart Loading**: Loads up to 100 products when no filters applied
+- **Caching**: SessionStorage caching for faster subsequent loads
+- **Lazy Loading**: Images load lazily for better initial page load
+
+### Image Optimization
+- Lazy loading for product images
+- Image preloading for featured products
+- Error handling with fallback placeholders
+- Optimized image formats and sizes
+
+### Code Optimization
+- React.memo for ProductCard components
+- useCallback and useMemo for expensive operations
+- Debounced search and filter operations
+- Optimized re-renders with proper dependency arrays
 
 ## Key Files & Configuration
 
@@ -253,7 +335,32 @@ This creates a `build` folder with optimized production files.
 Update Firebase configuration in your environment variables or Firebase config file.
 
 ### Payment Gateway
-The application is configured to work with Razorpay for payment processing.
+The application is integrated with **Razorpay** for secure payment processing.
+
+#### Features:
+- **Multiple Payment Methods**: UPI, Credit/Debit Cards, Net Banking, Wallets
+- **Test Mode Support**: Configured for testing with test API keys
+- **Secure Processing**: Payment data encrypted and secure
+- **Error Handling**: Comprehensive error handling and user feedback
+
+#### Setup:
+1. Get your Razorpay API keys from [Razorpay Dashboard](https://dashboard.razorpay.com/)
+2. Add keys to `.env` file:
+   ```env
+   REACT_APP_RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxx
+   REACT_APP_RAZORPAY_KEY_SECRET=your_key_secret
+   ```
+3. Restart the development server
+
+#### Test Cards:
+- **Card Number**: `4111 1111 1111 1111`
+- **Expiry**: Any future date (e.g., `12/25`)
+- **CVV**: Any 3 digits (e.g., `123`)
+
+#### Security:
+- Key ID (public key) is safe to use in frontend
+- Key Secret should **only** be used on backend for payment verification
+- All keys stored in `.env` file (not hardcoded)
 
 ## Analytics & Monitoring
 
