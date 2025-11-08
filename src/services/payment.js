@@ -19,27 +19,41 @@ class PaymentService {
     }
 
     async initializeRazorpay() {
+        // Check if Razorpay key is configured
+        if (!RAZORPAY_CONFIG.key || RAZORPAY_CONFIG.key === '') {
+            throw new Error('Razorpay Key ID is not configured. Please add REACT_APP_RAZORPAY_KEY_ID to your .env file and restart the application.');
+        }
+
         if (!this.isScriptLoaded) {
             const loaded = await loadRazorpayScript();
             if (!loaded) {
-                throw new Error('Failed to load Razorpay SDK');
+                throw new Error('Failed to load Razorpay SDK. Please check your internet connection.');
             }
             this.isScriptLoaded = true;
         }
+        
+        if (!window.Razorpay) {
+            throw new Error('Razorpay SDK is not available. Please refresh the page.');
+        }
+        
         return window.Razorpay;
     }
 
     async createOrder(orderData) {
         try {
-            // Create order in your backend/database
+            // Create order in your database first
             const orderId = await orderAPI.createOrder(orderData);
 
-            // For demo purposes, we'll create a mock order response
-            // In production, you would call your backend API
+            // For Razorpay testing: We'll let Razorpay create the order automatically
+            // In production, you should create a Razorpay order via your backend API first
+            // For now, we'll return order data without Razorpay order_id
+            // Razorpay will automatically create the order when payment is initiated
+            // For Razorpay testing, we use INR currency
+            // In production with international orders, you may need to handle currency conversion
             return {
-                id: orderId,
-                amount: Math.round(orderData.total * 100), // Amount in paisa
-                currency: 'INR',
+                id: orderId, // Database order ID
+                amount: Math.round(orderData.total * 100), // Amount in paisa (for INR)
+                currency: 'INR', // Razorpay test mode works with INR
                 receipt: `receipt_${orderId}`,
                 status: 'created'
             };
@@ -51,24 +65,47 @@ class PaymentService {
 
     async processPayment(orderData, userDetails) {
         try {
+            // Validate Razorpay key is configured
+            console.log('Checking Razorpay configuration...', {
+                hasKey: !!RAZORPAY_CONFIG.key,
+                keyLength: RAZORPAY_CONFIG.key?.length || 0,
+                keyPrefix: RAZORPAY_CONFIG.key?.substring(0, 10) || 'NOT SET'
+            });
+            
+            if (!RAZORPAY_CONFIG.key || RAZORPAY_CONFIG.key === '' || RAZORPAY_CONFIG.key.trim() === '') {
+                console.error('Razorpay Key ID is missing!', {
+                    envValue: process.env.REACT_APP_RAZORPAY_KEY_ID,
+                    configValue: RAZORPAY_CONFIG.key
+                });
+                throw new Error('Razorpay Key ID is not configured. Please add REACT_APP_RAZORPAY_KEY_ID to your .env file and restart the application.');
+            }
+
             const Razorpay = await this.initializeRazorpay();
 
-            // Create order
+            // Create order in database
             const order = await this.createOrder(orderData);
 
             return new Promise((resolve, reject) => {
+                // For testing: Razorpay will automatically create an order
+                // In production, you should create a Razorpay order via backend API first
+                // and pass the order_id here instead of amount
                 const options = {
                     key: RAZORPAY_CONFIG.key,
-                    amount: order.amount,
-                    currency: order.currency,
+                    amount: order.amount, // Amount in paisa
+                    currency: order.currency || 'INR',
                     name: RAZORPAY_CONFIG.name,
-                    description: RAZORPAY_CONFIG.description,
+                    description: RAZORPAY_CONFIG.description || `Order #${order.id}`,
                     image: RAZORPAY_CONFIG.image,
-                    order_id: order.id,
+                    // Note: For testing, we're not passing order_id
+                    // Razorpay will create the order automatically
+                    // In production, create order via backend API and pass: order_id: 'order_xxxxx'
                     handler: async (response) => {
                         try {
-                            // Verify payment on backend
+                            console.log('Payment successful:', response);
+                            
+                            // Verify payment and update order in database
                             const verificationResult = await this.verifyPayment(response, order.id);
+                            
                             resolve({
                                 success: true,
                                 payment: response,
@@ -76,23 +113,24 @@ class PaymentService {
                                 verification: verificationResult
                             });
                         } catch (error) {
+                            console.error('Payment verification error:', error);
                             reject({
                                 success: false,
-                                error: error.message
+                                error: error.message || 'Payment verification failed'
                             });
                         }
                     },
                     prefill: {
                         name: userDetails.name || '',
                         email: userDetails.email || '',
-                        contact: userDetails.phone || ''
+                        contact: userDetails.phone || userDetails.contact || ''
                     },
                     notes: {
-                        order_id: order.id,
+                        order_id: order.id, // Database order ID
                         customer_id: userDetails.id || ''
                     },
                     theme: {
-                        color: '#ec4899'
+                        color: '#ec4899' // Pink color matching the app theme
                     },
                     modal: {
                         ondismiss: () => {
@@ -104,8 +142,27 @@ class PaymentService {
                     }
                 };
 
-                const razorpayInstance = new Razorpay(options);
-                razorpayInstance.open();
+                try {
+                    const razorpayInstance = new Razorpay(options);
+                    
+                    // Handle payment failure
+                    razorpayInstance.on('payment.failed', (response) => {
+                        console.error('Payment failed:', response);
+                        reject({
+                            success: false,
+                            error: response.error?.description || 'Payment failed. Please try again.'
+                        });
+                    });
+                    
+                    // Open Razorpay checkout
+                    razorpayInstance.open();
+                } catch (error) {
+                    console.error('Error opening Razorpay:', error);
+                    reject({
+                        success: false,
+                        error: 'Failed to initialize payment gateway. Please check your Razorpay configuration.'
+                    });
+                }
             });
         } catch (error) {
             console.error('Payment processing error:', error);

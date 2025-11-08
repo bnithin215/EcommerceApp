@@ -1,6 +1,6 @@
 // Fixed Products.js - Compatible with existing ProductList component
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
     Filter,
@@ -12,6 +12,7 @@ import ProductList from '../components/products/ProductList';
 import { PageLoader } from '../components/common/Loader';
 import { productAPI } from '../services/api';
 import { PRODUCT_CATEGORIES } from '../utils/constants';
+import { debounce } from '../utils/helpers';
 
 const Products = () => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -20,6 +21,8 @@ const Products = () => {
     const [viewMode, setViewMode] = useState('grid');
     const [totalProducts, setTotalProducts] = useState(0);
     const [showFilters, setShowFilters] = useState(false);
+    const [hasMore, setHasMore] = useState(false);
+    const PRODUCTS_PER_PAGE = 20; // Limit products per page for better performance
 
     // Advanced filter options
     const filterOptions = {
@@ -61,39 +64,148 @@ const Products = () => {
     const maxPrice = searchParams.get('maxPrice');
     const sortBy = searchParams.get('sortBy') || 'popularity';
 
-    // Load products
-    useEffect(() => {
-        const loadProducts = async () => {
-            try {
-                setLoading(true);
+    // Memoize filter params to avoid unnecessary re-renders
+    // For small datasets or no filters, load all products. For filtered/searched results, use pagination
+    const filterParams = useMemo(() => {
+        // Check if any actual filters are applied (excluding 'all' category)
+        const hasActualFilters = (category && category !== 'all') || search || fabric || occasion || color || minPrice || maxPrice;
+        const params = {};
+        
+        // Only apply small limit if we have filters or search (pagination for filtered results)
+        // Otherwise, load more products (100) for better UX with small-medium catalogs
+        if (hasActualFilters) {
+            params.limit = PRODUCTS_PER_PAGE; // 20 for filtered results
+        } else {
+            // Load up to 100 products initially when viewing all products (covers catalogs up to 100 products)
+            params.limit = 100;
+        }
+        
+        // Only add category filter if it's not 'all' and not empty
+        if (category && category !== 'all') {
+            params.category = category;
+        }
+        if (search) params.search = search;
+        if (fabric) params.fabric = fabric;
+        if (occasion) params.occasion = occasion;
+        if (color) params.color = color;
+        if (minPrice) params.minPrice = minPrice;
+        if (maxPrice) params.maxPrice = maxPrice;
+        if (sortBy) params.sortBy = sortBy;
+        return params;
+    }, [category, search, fabric, occasion, color, minPrice, maxPrice, sortBy]);
 
-                const params = {};
-                if (category && category !== 'all') params.category = category;
-                if (search) params.search = search;
-                if (fabric) params.fabric = fabric;
-                if (occasion) params.occasion = occasion;
-                if (color) params.color = color;
-                if (minPrice) params.minPrice = minPrice;
-                if (maxPrice) params.maxPrice = maxPrice;
-                if (sortBy) params.sortBy = sortBy;
+    // Load products function with caching and optimized loading
+    const loadProducts = useCallback(async (params, resetPage = true) => {
+        try {
+            setLoading(true);
+            if (resetPage) {
+                setProducts([]);
+            }
 
-                console.log('Loading products with params:', params);
+            // Create cache key from params (excluding limit for cache consistency)
+            const cacheParams = { ...params };
+            delete cacheParams.limit;
+            const cacheKey = `products_${JSON.stringify(cacheParams)}`;
+            const cached = sessionStorage.getItem(cacheKey);
+            
+            // Use cache if available and less than 2 minutes old (only for initial load)
+            if (cached && resetPage) {
+                try {
+                    const cachedData = JSON.parse(cached);
+                    const cacheTime = cachedData.timestamp || 0;
+                    const now = Date.now();
+                    if (now - cacheTime < 2 * 60 * 1000) {
+                        // Use all cached products (they're already filtered)
+                        const cachedProducts = cachedData.products || [];
+                        setProducts(cachedProducts);
+                        setTotalProducts(cachedData.total || cachedProducts.length);
+                        
+                        // Determine if there are more products to load
+                        const hasFilters = params.category || params.search || params.fabric || params.occasion || params.color || params.minPrice || params.maxPrice;
+                        if (hasFilters) {
+                            setHasMore(cachedProducts.length >= (params.limit || PRODUCTS_PER_PAGE));
+                        } else {
+                            setHasMore(cachedProducts.length === (params.limit || 100));
+                        }
+                        setLoading(false);
+                        return;
+                    }
+                } catch (e) {
+                    // Cache invalid, continue to fetch
+                }
+            }
 
-                const response = await productAPI.getAllProducts(params);
-                setProducts(response.products || []);
-                setTotalProducts(response.total || response.products?.length || 0);
+            console.log('Loading products with params:', params);
 
-            } catch (error) {
-                console.error('Error loading products:', error);
+            const response = await productAPI.getAllProducts(params);
+            let newProducts = response.products || [];
+            
+            // For "Load More", we replace products since Firestore returns from the start with higher limit
+            // The client-side filters will ensure we show the correct filtered results
+            setProducts(newProducts);
+            
+            // Cache results (only on initial load or when filters change)
+            if (resetPage) {
+                try {
+                    sessionStorage.setItem(cacheKey, JSON.stringify({
+                        products: newProducts,
+                        total: response.total || newProducts.length,
+                        timestamp: Date.now()
+                    }));
+                } catch (e) {
+                    // Ignore cache errors (sessionStorage might be full)
+                }
+            }
+            
+            setTotalProducts(response.total || newProducts.length);
+            // Show "Load More" only if we got exactly the limit (indicating there might be more)
+            // For unfiltered results with limit 100, assume we got all if less than 100
+            const hasFilters = params.category || params.search || params.fabric || params.occasion || params.color || params.minPrice || params.maxPrice;
+            if (hasFilters) {
+                // For filtered results, show "Load More" if we got a full page
+                setHasMore(newProducts.length >= (params.limit || PRODUCTS_PER_PAGE));
+            } else {
+                // For unfiltered results, only show "Load More" if we got exactly the limit (100)
+                setHasMore(newProducts.length === (params.limit || 100));
+            }
+
+        } catch (error) {
+            console.error('Error loading products:', error);
+            if (resetPage) {
                 setProducts([]);
                 setTotalProducts(0);
-            } finally {
-                setLoading(false);
             }
-        };
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-        loadProducts();
-    }, [category, search, fabric, occasion, color, minPrice, maxPrice, sortBy]);
+    // Debounced search function
+    const debouncedLoadProducts = useMemo(
+        () => debounce((params, resetPage) => {
+            loadProducts(params, resetPage);
+        }, 300),
+        [loadProducts]
+    );
+
+    // Load products when filters change
+    useEffect(() => {
+        loadProducts(filterParams, true);
+    }, [filterParams, loadProducts]);
+
+    // Load more products (pagination)
+    // Fetch more products with increased limit
+    const loadMoreProducts = useCallback(() => {
+        if (!loading) {
+            const currentLimit = filterParams.limit || PRODUCTS_PER_PAGE;
+            const nextLimit = currentLimit + PRODUCTS_PER_PAGE;
+            const nextPageParams = {
+                ...filterParams,
+                limit: nextLimit
+            };
+            loadProducts(nextPageParams, false);
+        }
+    }, [loading, filterParams, loadProducts]);
 
     // Update URL with filter changes
     const updateFilters = (newFilters) => {
@@ -110,8 +222,8 @@ const Products = () => {
         setSearchParams(params);
     };
 
-    // Handle filter changes
-    const handleFilterChange = (filterType, value) => {
+    // Handle filter changes (optimized)
+    const handleFilterChange = useCallback((filterType, value) => {
         const currentFilters = {
             category,
             search,
@@ -139,7 +251,7 @@ const Products = () => {
         }
 
         updateFilters(currentFilters);
-    };
+    }, [category, search, fabric, occasion, color, minPrice, maxPrice, sortBy]);
 
     // Clear specific filter
     const clearFilter = (filterType) => {
@@ -201,7 +313,10 @@ const Products = () => {
         );
     };
 
-    if (loading) {
+    // Don't show full page loader if we're loading more products (pagination)
+    const isLoadingInitial = loading && products.length === 0;
+
+    if (isLoadingInitial) {
         return <PageLoader message="Loading products..." />;
     }
 
@@ -429,12 +544,35 @@ const Products = () => {
                         {/* Products List - Using your existing component */}
                         <ProductList
                             products={products}
-                            loading={loading}
+                            loading={loading && products.length === 0}
                             viewMode={viewMode}
                             onViewModeChange={setViewMode}
                             emptyMessage={search ? "No products found for your search" : "No products found with current filters"}
                             emptyDescription={search ? "Try different keywords or browse our categories" : "Try adjusting your filters or browse our full collection"}
                         />
+
+                        {/* Load More Button */}
+                        {hasMore && products.length > 0 && (
+                            <div className="mt-8 text-center">
+                                <button
+                                    onClick={loadMoreProducts}
+                                    disabled={loading}
+                                    className="px-6 py-3 bg-pink-600 text-white font-semibold rounded-lg hover:bg-pink-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    {loading ? 'Loading...' : 'Load More Products'}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Loading indicator for pagination */}
+                        {loading && products.length > 0 && (
+                            <div className="mt-8 text-center">
+                                <div className="inline-flex items-center text-gray-600">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-pink-600 mr-2"></div>
+                                    Loading more products...
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

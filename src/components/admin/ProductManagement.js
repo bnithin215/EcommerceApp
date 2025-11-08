@@ -8,12 +8,14 @@ import {
     Package,
     AlertTriangle,
     CheckCircle,
-    Download
+    Download,
+    Upload
 } from 'lucide-react';
 import { productAPI } from '../../services/api';
 import { formatCurrency } from '../../utils/helpers';
 import { PRODUCT_CATEGORIES } from '../../utils/constants';
 import ProductForm from './ProductForm';
+import UploadProducts from './UploadProducts';
 import { TableSkeleton } from '../common/Loader';
 import toast from 'react-hot-toast';
 
@@ -29,6 +31,7 @@ const ProductManagement = () => {
     const [selectedProducts, setSelectedProducts] = useState([]);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [productToDelete, setProductToDelete] = useState(null);
+    const [showUploadProducts, setShowUploadProducts] = useState(false);
 
     const applyFilters = useCallback(() => {
         let filtered = [...products];
@@ -228,6 +231,13 @@ const ProductManagement = () => {
                         Export
                     </button>
                     <button
+                        onClick={() => setShowUploadProducts(true)}
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                    >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload from JSON
+                    </button>
+                    <button
                         onClick={handleAddProduct}
                         className="inline-flex items-center px-4 py-2 bg-pink-600 text-white rounded-lg text-sm font-medium hover:bg-pink-700 transition-colors"
                     >
@@ -236,6 +246,19 @@ const ProductManagement = () => {
                     </button>
                 </div>
             </div>
+
+            {/* Upload Products Section */}
+            {showUploadProducts && (
+                <div className="mb-6">
+                    <UploadProducts 
+                        onUploadComplete={() => {
+                            setShowUploadProducts(false);
+                            loadProducts(); // Reload products after upload
+                        }}
+                        onCancel={() => setShowUploadProducts(false)}
+                    />
+                </div>
+            )}
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

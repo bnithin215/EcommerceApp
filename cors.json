@@ -1,6 +1,6 @@
 [
   {
-    "origin": ["http://localhost:3000", "https://localhost:3000", "*"],
+    "origin": ["http://localhost:3000", "https://localhost:3000", "*","https://srija4her.com"],
     "method": ["GET", "HEAD", "PUT", "POST", "DELETE"],
     "maxAgeSeconds": 3600,
     "responseHeader": ["Content-Type", "Access-Control-Allow-Origin", "x-goog-resumable"]

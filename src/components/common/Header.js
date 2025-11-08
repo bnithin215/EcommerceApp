@@ -217,7 +217,7 @@ const Header = () => {
                 </div>
 
                 {/* Navigation Categories - Desktop */}
-                <div className="hidden md:flex items-center space-x-1 py-3 border-t border-gray-100">
+                <div className="hidden md:flex items-center justify-center space-x-1 py-3 border-t border-gray-100">
                     {PRODUCT_CATEGORIES.slice(1).map((category) => (
                         <button
                             key={category.id}

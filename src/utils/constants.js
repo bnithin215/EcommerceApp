@@ -97,13 +97,26 @@ export const API_ENDPOINTS = {
 };
 
 // Payment Gateway Configuration
+// NOTE: Razorpay Key Secret should NEVER be exposed in frontend code
+// It should only be used on the backend for payment verification and order creation
+// For frontend, we only use the Key ID (public key)
 export const RAZORPAY_CONFIG = {
-    key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_1234567890',
+    key: process.env.REACT_APP_RAZORPAY_KEY_ID || '',
+    keySecret: process.env.REACT_APP_RAZORPAY_KEY_SECRET || '', // Only for backend use
     currency: 'INR',
     name: COMPANY_INFO.name,
     description: 'Purchase from Srija4Her',
     image: '/img.png'
 };
+
+// Debug: Log Razorpay configuration (only in development)
+if (process.env.NODE_ENV === 'development') {
+    console.log('Razorpay Config:', {
+        key: RAZORPAY_CONFIG.key ? `${RAZORPAY_CONFIG.key.substring(0, 10)}...` : 'NOT SET',
+        keySecret: RAZORPAY_CONFIG.keySecret ? 'SET (hidden)' : 'NOT SET',
+        hasKey: !!RAZORPAY_CONFIG.key
+    });
+}
 
 // App Configuration
 export const APP_CONFIG = {
@@ -113,7 +126,7 @@ export const APP_CONFIG = {
     freeShippingThreshold: 999,
     maxImageSize: 5 * 1024 * 1024, // 5MB
     supportedImageFormats: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-    defaultProductImage: '/images/no-image-placeholder.jpg'
+    defaultProductImage: 'https://via.placeholder.com/400x400/f8f9fa/6c757d?text=No+Image'
 };
 
 // Order Status
@@ -207,4 +220,42 @@ export const SUCCESS_MESSAGES = {
     PRODUCT_REMOVED: 'Product removed from cart!',
     WISHLIST_ADDED: 'Added to wishlist!',
     WISHLIST_REMOVED: 'Removed from wishlist!'
+};
+
+// Countries supported for shipping
+export const COUNTRIES = [
+    { code: 'IN', name: 'India' },
+    { code: 'US', name: 'United States' }
+];
+
+// Indian States and Union Territories
+export const INDIAN_STATES = [
+    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
+    'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
+    'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+    'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+    'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+    'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
+    'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry'
+];
+
+// US States
+export const US_STATES = [
+    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado',
+    'Connecticut', 'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho',
+    'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana',
+    'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota',
+    'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada',
+    'New Hampshire', 'New Jersey', 'New Mexico', 'New York',
+    'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon',
+    'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota',
+    'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington',
+    'West Virginia', 'Wisconsin', 'Wyoming', 'District of Columbia'
+];
+
+// Country-specific state mapping
+export const COUNTRY_STATES = {
+    'IN': INDIAN_STATES,
+    'US': US_STATES
 };

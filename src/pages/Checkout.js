@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import paymentService from '../services/payment';
 import { formatCurrency, calculateOrderTotal, validateEmail, validatePhone } from '../utils/helpers';
 import { ButtonLoader, LoadingOverlay } from '../components/common/Loader';
+import { COUNTRIES, COUNTRY_STATES } from '../utils/constants';
 import toast from 'react-hot-toast';
 
 const Checkout = () => {
@@ -31,6 +32,7 @@ const Checkout = () => {
         fullName: userProfile?.displayName || '',
         email: user?.email || '',
         phone: userProfile?.phone || '',
+        country: 'IN', // Default to India
         address: '',
         city: '',
         state: '',
@@ -38,7 +40,17 @@ const Checkout = () => {
         landmark: ''
     });
 
-    const [billingAddress, setBillingAddress] = useState({});
+    const [billingAddress, setBillingAddress] = useState({
+        fullName: '',
+        email: '',
+        phone: '',
+        country: 'IN',
+        address: '',
+        city: '',
+        state: '',
+        pincode: '',
+        landmark: ''
+    });
     const [sameAsShipping, setSameAsShipping] = useState(true);
     const [errors, setErrors] = useState({});
 
@@ -69,9 +81,25 @@ const Checkout = () => {
         const { name, value } = e.target;
 
         if (addressType === 'shipping') {
-            setShippingAddress(prev => ({ ...prev, [name]: value }));
+            const updatedAddress = { ...shippingAddress, [name]: value };
+            
+            // If country changes, reset state and pincode
+            if (name === 'country') {
+                updatedAddress.state = '';
+                updatedAddress.pincode = '';
+            }
+            
+            setShippingAddress(updatedAddress);
         } else {
-            setBillingAddress(prev => ({ ...prev, [name]: value }));
+            const updatedAddress = { ...billingAddress, [name]: value };
+            
+            // If country changes, reset state and pincode
+            if (name === 'country') {
+                updatedAddress.state = '';
+                updatedAddress.pincode = '';
+            }
+            
+            setBillingAddress(updatedAddress);
         }
 
         // Clear error when user starts typing
@@ -100,8 +128,20 @@ const Checkout = () => {
 
         if (!address.phone?.trim()) {
             newErrors[`${prefix}phone`] = 'Phone number is required';
-        } else if (!validatePhone(address.phone)) {
-            newErrors[`${prefix}phone`] = 'Please enter a valid phone number';
+        } else {
+            // Validate phone based on country
+            const phoneRegex = address.country === 'IN' 
+                ? /^[6-9]\d{9}$/ // Indian phone: 10 digits starting with 6-9
+                : /^[1-9]\d{9}$/; // US phone: 10 digits
+            if (!phoneRegex.test(address.phone.replace(/[\s\-\(\)]/g, ''))) {
+                newErrors[`${prefix}phone`] = address.country === 'IN' 
+                    ? 'Please enter a valid 10-digit Indian phone number'
+                    : 'Please enter a valid 10-digit US phone number';
+            }
+        }
+
+        if (!address.country) {
+            newErrors[`${prefix}country`] = 'Country is required';
         }
 
         if (!address.address?.trim()) {
@@ -117,9 +157,22 @@ const Checkout = () => {
         }
 
         if (!address.pincode?.trim()) {
-            newErrors[`${prefix}pincode`] = 'Pincode is required';
-        } else if (!/^\d{6}$/.test(address.pincode)) {
-            newErrors[`${prefix}pincode`] = 'Please enter a valid 6-digit pincode';
+            newErrors[`${prefix}pincode`] = address.country === 'IN' 
+                ? 'Pincode is required' 
+                : 'ZIP code is required';
+        } else {
+            // Validate postal code based on country
+            if (address.country === 'IN') {
+                // Indian pincode: 6 digits
+                if (!/^\d{6}$/.test(address.pincode)) {
+                    newErrors[`${prefix}pincode`] = 'Please enter a valid 6-digit pincode';
+                }
+            } else if (address.country === 'US') {
+                // US ZIP code: 5 digits or 5+4 format
+                if (!/^\d{5}(-\d{4})?$/.test(address.pincode)) {
+                    newErrors[`${prefix}pincode`] = 'Please enter a valid ZIP code (e.g., 12345 or 12345-6789)';
+                }
+            }
         }
 
         return newErrors;
@@ -188,7 +241,15 @@ const Checkout = () => {
             }
         } catch (error) {
             console.error('Payment error:', error);
-            toast.error('Payment failed. Please try again.');
+            // Show user-friendly error messages
+            const errorMessage = error.message || 'Payment failed. Please try again.';
+            if (errorMessage.includes('not configured')) {
+                toast.error('Payment gateway is not configured. Please contact support.');
+            } else if (errorMessage.includes('cancelled')) {
+                toast.error('Payment was cancelled. Please try again when ready.');
+            } else {
+                toast.error(errorMessage);
+            }
         } finally {
             setProcessingPayment(false);
         }
@@ -291,23 +352,48 @@ const Checkout = () => {
                                             </div>
                                         </div>
 
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Phone Number *
-                                            </label>
-                                            <input
-                                                type="tel"
-                                                name="phone"
-                                                value={shippingAddress.phone}
-                                                onChange={(e) => handleInputChange(e, 'shipping')}
-                                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 ${
-                                                    errors['shipping.phone'] ? 'border-red-300' : 'border-gray-300'
-                                                }`}
-                                                placeholder="Enter your phone number"
-                                            />
-                                            {errors['shipping.phone'] && (
-                                                <p className="mt-1 text-sm text-red-600">{errors['shipping.phone']}</p>
-                                            )}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Country *
+                                                </label>
+                                                <select
+                                                    name="country"
+                                                    value={shippingAddress.country}
+                                                    onChange={(e) => handleInputChange(e, 'shipping')}
+                                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                                                        errors['shipping.country'] ? 'border-red-300' : 'border-gray-300'
+                                                    }`}
+                                                >
+                                                    {COUNTRIES.map((country) => (
+                                                        <option key={country.code} value={country.code}>
+                                                            {country.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                {errors['shipping.country'] && (
+                                                    <p className="mt-1 text-sm text-red-600">{errors['shipping.country']}</p>
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Phone Number *
+                                                </label>
+                                                <input
+                                                    type="tel"
+                                                    name="phone"
+                                                    value={shippingAddress.phone}
+                                                    onChange={(e) => handleInputChange(e, 'shipping')}
+                                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+                                                        errors['shipping.phone'] ? 'border-red-300' : 'border-gray-300'
+                                                    }`}
+                                                    placeholder={shippingAddress.country === 'IN' ? '10-digit mobile number' : '10-digit phone number'}
+                                                />
+                                                {errors['shipping.phone'] && (
+                                                    <p className="mt-1 text-sm text-red-600">{errors['shipping.phone']}</p>
+                                                )}
+                                            </div>
                                         </div>
 
                                         <div>
@@ -353,16 +439,21 @@ const Checkout = () => {
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                                     State *
                                                 </label>
-                                                <input
-                                                    type="text"
+                                                <select
                                                     name="state"
                                                     value={shippingAddress.state}
                                                     onChange={(e) => handleInputChange(e, 'shipping')}
                                                     className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 ${
                                                         errors['shipping.state'] ? 'border-red-300' : 'border-gray-300'
                                                     }`}
-                                                    placeholder="State"
-                                                />
+                                                >
+                                                    <option value="">Select State</option>
+                                                    {COUNTRY_STATES[shippingAddress.country]?.map((state) => (
+                                                        <option key={state} value={state}>
+                                                            {state}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                                 {errors['shipping.state'] && (
                                                     <p className="mt-1 text-sm text-red-600">{errors['shipping.state']}</p>
                                                 )}
@@ -370,7 +461,7 @@ const Checkout = () => {
 
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Pincode *
+                                                    {shippingAddress.country === 'IN' ? 'Pincode *' : 'ZIP Code *'}
                                                 </label>
                                                 <input
                                                     type="text"
@@ -380,7 +471,7 @@ const Checkout = () => {
                                                     className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 ${
                                                         errors['shipping.pincode'] ? 'border-red-300' : 'border-gray-300'
                                                     }`}
-                                                    placeholder="Pincode"
+                                                    placeholder={shippingAddress.country === 'IN' ? '6-digit pincode' : 'ZIP code (e.g., 12345)'}
                                                 />
                                                 {errors['shipping.pincode'] && (
                                                     <p className="mt-1 text-sm text-red-600">{errors['shipping.pincode']}</p>
@@ -469,6 +560,7 @@ const Checkout = () => {
                                                 <p>{shippingAddress.fullName}</p>
                                                 <p>{shippingAddress.address}</p>
                                                 <p>{shippingAddress.city}, {shippingAddress.state} {shippingAddress.pincode}</p>
+                                                <p>{COUNTRIES.find(c => c.code === shippingAddress.country)?.name || shippingAddress.country}</p>
                                                 <p>{shippingAddress.phone}</p>
                                             </div>
                                         </div>

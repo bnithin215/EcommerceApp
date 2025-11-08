@@ -1,6 +1,6 @@
 // Updated ProductCard.js - Enhanced with better compatibility
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Heart, ShoppingCart, Eye, Play, MapPin, Truck } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
@@ -9,12 +9,46 @@ import { formatCurrency, calculateDiscount, getImageUrl } from '../../utils/help
 import { APP_CONFIG } from '../../utils/constants';
 import toast from 'react-hot-toast';
 
-const ProductCard = ({ product, className = "", variant = "default" }) => {
+const ProductCard = memo(({ product, className = "", variant = "default" }) => {
     const { addToCart, addToWishlist, removeFromWishlist, wishlistItems } = useCart();
     const { user } = useAuth();
-    const [imageLoading, setImageLoading] = useState(true);
-    const [imageError, setImageError] = useState(false);
+    
+    // Get primary image - handle both array and string formats
+    const { primaryImage, secondaryImage, hasValidImage } = useMemo(() => {
+        let primary = null;
+        if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+            // Filter out empty or invalid image URLs
+            const validImages = product.images.filter(img => img && img !== '' && img !== 'undefined' && img !== 'null');
+            if (validImages.length > 0) {
+                primary = validImages[0];
+            }
+        } else if (product.image && product.image !== '' && product.image !== 'undefined' && product.image !== 'null') {
+            primary = product.image;
+        } else if (product.imageUrl && product.imageUrl !== '' && product.imageUrl !== 'undefined' && product.imageUrl !== 'null') {
+            primary = product.imageUrl;
+        }
+        
+        const hasValid = primary && primary !== '' && primary !== 'undefined' && primary !== 'null';
+        const secondary = product.images && Array.isArray(product.images) && product.images.length > 1 
+            ? product.images[1] 
+            : null;
+            
+        return { primaryImage: primary, secondaryImage: secondary, hasValidImage: hasValid };
+    }, [product]);
+    
+    const imageUrl = useMemo(() => {
+        return hasValidImage ? getImageUrl(primaryImage) : APP_CONFIG.defaultProductImage;
+    }, [primaryImage, hasValidImage]);
+    
+    const [imageLoading, setImageLoading] = useState(hasValidImage);
+    const [imageError, setImageError] = useState(!hasValidImage);
     const [isHovered, setIsHovered] = useState(false);
+    
+    // Reset image state when product changes
+    useEffect(() => {
+        setImageLoading(hasValidImage);
+        setImageError(!hasValidImage);
+    }, [hasValidImage, product.id]);
 
     // Check if product is in wishlist
     const isInWishlist = wishlistItems.some(item => item.id === product.id);
@@ -79,11 +113,6 @@ const ProductCard = ({ product, className = "", variant = "default" }) => {
         setImageError(true);
     };
 
-    // Get primary image
-    const primaryImage = product.images?.[0] || product.image;
-    const secondaryImage = product.images?.[1];
-    const imageUrl = getImageUrl(primaryImage);
-
     // Render rating stars
     const renderRating = () => {
         const rating = product.rating || 0;
@@ -123,18 +152,19 @@ const ProductCard = ({ product, className = "", variant = "default" }) => {
             >
                 <div className="flex p-4">
                     {/* Image - Fixed dimensions */}
-                    <div className="relative w-24 h-24 flex-shrink-0">
-                        {imageLoading && (
+                    <div className="relative w-24 h-24 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
+                        {imageLoading && !imageError && (
                             <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg" />
                         )}
                         <img
-                            src={imageError ? APP_CONFIG.defaultProductImage : imageUrl}
-                            alt={product.name}
+                            src={imageError || !hasValidImage ? APP_CONFIG.defaultProductImage : imageUrl}
+                            alt={product.name || 'Product'}
                             className={`w-full h-full object-cover rounded-lg ${
-                                imageLoading ? 'opacity-0' : 'opacity-100'
+                                imageLoading && !imageError ? 'opacity-0' : 'opacity-100'
                             } transition-opacity`}
                             onLoad={handleImageLoad}
                             onError={handleImageError}
+                            loading="lazy"
                         />
 
                         {/* Discount badge */}
@@ -249,28 +279,38 @@ const ProductCard = ({ product, className = "", variant = "default" }) => {
         >
             {/* Image Container with fixed aspect ratio */}
             <div className="relative w-full h-64 bg-gray-50 overflow-hidden">
-                {imageLoading && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse" />
+                {imageLoading && !imageError && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse flex items-center justify-center">
+                        <div className="text-gray-400 text-sm">Loading...</div>
+                    </div>
                 )}
 
                 <img
-                    src={imageError ? APP_CONFIG.defaultProductImage : imageUrl}
-                    alt={product.name}
+                    src={imageError || !hasValidImage ? APP_CONFIG.defaultProductImage : imageUrl}
+                    alt={product.name || 'Product'}
                     className={`w-full h-full object-cover cursor-pointer ${
-                        imageLoading ? 'opacity-0' : 'opacity-100'
+                        imageLoading && !imageError ? 'opacity-0' : 'opacity-100'
                     } transition-all duration-300 group-hover:scale-105`}
                     onLoad={handleImageLoad}
                     onError={handleImageError}
                     onClick={() => window.location.href = `/products/${product.id}`}
+                    loading="lazy"
+                    decoding="async"
+                    fetchPriority="low"
                 />
 
                 {/* Secondary image on hover */}
-                {secondaryImage && isHovered && !imageLoading && (
+                {secondaryImage && secondaryImage !== '' && secondaryImage !== 'undefined' && secondaryImage !== 'null' && isHovered && !imageLoading && !imageError && (
                     <img
                         src={getImageUrl(secondaryImage)}
-                        alt={product.name}
+                        alt={product.name || 'Product'}
                         className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer"
                         onClick={() => window.location.href = `/products/${product.id}`}
+                        loading="lazy"
+                        onError={(e) => {
+                            // Hide secondary image if it fails to load
+                            e.target.style.display = 'none';
+                        }}
                     />
                 )}
 
@@ -440,6 +480,17 @@ const ProductCard = ({ product, className = "", variant = "default" }) => {
             </div>
         </div>
     );
-};
+}, (prevProps, nextProps) => {
+    // Custom comparison function for React.memo
+    return (
+        prevProps.product.id === nextProps.product.id &&
+        prevProps.product.price === nextProps.product.price &&
+        prevProps.product.inStock === nextProps.product.inStock &&
+        prevProps.variant === nextProps.variant &&
+        prevProps.className === nextProps.className
+    );
+});
+
+ProductCard.displayName = 'ProductCard';
 
 export default ProductCard;

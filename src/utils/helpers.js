@@ -330,10 +330,13 @@ export const parseQueryString = (queryString) => {
 
 // Image utilities
 export const generateImageUrl = (imagePath, options = {}) => {
-    if (!imagePath) return getImagePlaceholder();
+    // Handle null, undefined, or empty string
+    if (!imagePath || imagePath === '' || imagePath === 'undefined' || imagePath === 'null') {
+        return getImagePlaceholder();
+    }
 
     // If it's already a full URL, return as is
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    if (typeof imagePath === 'string' && (imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
         return imagePath;
     }
 
@@ -356,7 +359,42 @@ export const generateImageUrl = (imagePath, options = {}) => {
 
 // MISSING FUNCTION: Add getImageUrl as alias for generateImageUrl
 export const getImageUrl = (imagePath, options = {}) => {
-    return generateImageUrl(imagePath, options);
+    // Handle null, undefined, or empty string
+    if (!imagePath || 
+        imagePath === '' || 
+        imagePath === 'undefined' || 
+        imagePath === 'null' ||
+        imagePath === null ||
+        imagePath === undefined) {
+        return getImagePlaceholder(400, 400, 'No Image');
+    }
+    
+    // Convert to string if it's not already
+    const imageStr = String(imagePath).trim();
+    
+    // Check if it's a valid string after conversion
+    if (!imageStr || imageStr === '' || imageStr === 'undefined' || imageStr === 'null') {
+        return getImagePlaceholder(400, 400, 'No Image');
+    }
+    
+    // If it's already a full URL, return as is
+    if (imageStr.startsWith('http://') || imageStr.startsWith('https://')) {
+        return imageStr;
+    }
+    
+    // If it's a data URL, return as is
+    if (imageStr.startsWith('data:')) {
+        return imageStr;
+    }
+    
+    // Try to generate URL, but fallback to placeholder if generation fails
+    try {
+        const generatedUrl = generateImageUrl(imageStr, options);
+        return generatedUrl || getImagePlaceholder(400, 400, 'No Image');
+    } catch (error) {
+        console.warn('Error generating image URL:', error);
+        return getImagePlaceholder(400, 400, 'No Image');
+    }
 };
 
 export const getImagePlaceholder = (width = 400, height = 400, text = 'Image') => {

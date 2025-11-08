@@ -143,10 +143,9 @@ class ProductAPI {
         try {
             // Check if Firestore is properly initialized
             if (!db || db._isMock) {
-                console.warn('⚠️ Firebase Firestore is not initialized.');
-                console.warn('📦 Using fallback products from products.json');
-                console.warn('💡 To enable Firebase, check your .env file configuration');
-                return this.loadFallbackProducts(filters);
+                console.error('❌ Firebase Firestore is not initialized.');
+                console.error('💡 Please configure Firebase in your .env file');
+                throw new Error('Firebase Firestore is not initialized. Please check your Firebase configuration.');
             }
 
             console.log('Loading products with filters:', filters);
@@ -222,24 +221,46 @@ class ProductAPI {
                 q = query(q, orderBy(sortField, sortDirection));
             }
 
-            // Apply limit
-            const limitCount = filters.limit || 20;
+            // Apply limit for performance
+            // If no limit specified and no filters, default to 100 to load small-medium catalogs
+            // If limit is specified, use it (max 200)
+            // If filters are applied, default to 20 for pagination
+            let limitCount = 100; // Default for unfiltered queries (load more products)
+            if (filters.limit) {
+                limitCount = Math.min(filters.limit, 200);
+            } else if (filters.category || filters.search || filters.fabric || filters.occasion || filters.color || filters.minPrice || filters.maxPrice) {
+                limitCount = 20; // Default for filtered queries (pagination)
+            }
             q = query(q, limit(limitCount));
 
             console.log('Executing Firestore query...');
             const snapshot = await getDocs(q);
 
-            let products = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            let products = snapshot.docs.map(doc => {
+                const data = doc.data();
+                // Ensure images is always an array
+                if (data.images && !Array.isArray(data.images)) {
+                    data.images = [data.images];
+                } else if (!data.images && data.image) {
+                    data.images = [data.image];
+                } else if (!data.images) {
+                    data.images = [];
+                }
+                return {
+                    id: doc.id,
+                    ...data
+                };
+            });
 
             console.log(`Fetched ${products.length} products from Firestore`);
 
-            // If no products found and we're not filtering, try fallback
-            if (products.length === 0 && (!filters.category || filters.category === 'all') && !filters.search) {
-                console.warn('⚠️ No products found in Firebase. Using fallback products...');
-                return this.loadFallbackProducts(filters);
+            // If no products found, return empty array (no fallback)
+            if (products.length === 0) {
+                console.warn('⚠️ No products found in Firestore. Please upload products using the admin panel.');
+                return {
+                    products: [],
+                    total: 0
+                };
             }
 
             // Apply client-side sorting if we couldn't sort server-side due to index limitations
@@ -257,6 +278,33 @@ class ProductAPI {
                     product.category.toLowerCase().includes(searchTerm)
                 );
                 console.log(`Applied search filter: ${filters.search}, found ${products.length} results`);
+            }
+
+            // Apply client-side filters for better performance (fabric, occasion, color, price)
+            if (filters.fabric) {
+                products = products.filter(p => 
+                    p.fabric && p.fabric.toLowerCase() === filters.fabric.toLowerCase()
+                );
+            }
+
+            if (filters.occasion) {
+                products = products.filter(p => 
+                    p.occasion && p.occasion.toLowerCase().includes(filters.occasion.toLowerCase())
+                );
+            }
+
+            if (filters.color) {
+                products = products.filter(p => 
+                    p.color && p.color.toLowerCase() === filters.color.toLowerCase()
+                );
+            }
+
+            if (filters.minPrice) {
+                products = products.filter(p => (p.price || 0) >= parseFloat(filters.minPrice));
+            }
+
+            if (filters.maxPrice) {
+                products = products.filter(p => (p.price || 0) <= parseFloat(filters.maxPrice));
             }
 
             return {
@@ -304,9 +352,9 @@ class ProductAPI {
                 }
             }
 
-            // Final fallback: Use JSON products
-            console.warn('⚠️ Firebase query failed. Using fallback products from products.json');
-            return this.loadFallbackProducts(filters);
+            // Re-throw error instead of using fallback
+            console.error('❌ Firebase query failed:', error);
+            throw error;
         }
     }
 
@@ -406,10 +454,8 @@ class ProductAPI {
         try {
             // Check if Firestore is properly initialized
             if (!db || db._isMock) {
-                console.warn('⚠️ Firebase Firestore is not initialized.');
-                console.warn('📦 Using fallback featured products from products.json');
-                const fallback = this.loadFallbackProducts({});
-                return fallback.products.slice(0, limitCount);
+                console.error('❌ Firebase Firestore is not initialized.');
+                throw new Error('Firebase Firestore is not initialized. Please check your Firebase configuration.');
             }
 
             console.log(' Fetching featured products from Firebase...');
@@ -423,10 +469,21 @@ class ProductAPI {
             );
 
             const snapshot = await getDocs(q);
-            const featuredProducts = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            const featuredProducts = snapshot.docs.map(doc => {
+                const data = doc.data();
+                // Ensure images is always an array
+                if (data.images && !Array.isArray(data.images)) {
+                    data.images = [data.images];
+                } else if (!data.images && data.image) {
+                    data.images = [data.image];
+                } else if (!data.images) {
+                    data.images = [];
+                }
+                return {
+                    id: doc.id,
+                    ...data
+                };
+            });
 
             if (featuredProducts.length > 0) {
                 console.log(' Found featured products:', featuredProducts.length);
@@ -443,20 +500,30 @@ class ProductAPI {
             );
 
             const fallbackSnapshot = await getDocs(fallbackQuery);
-            const latestProducts = fallbackSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            const latestProducts = fallbackSnapshot.docs.map(doc => {
+                const data = doc.data();
+                // Ensure images is always an array
+                if (data.images && !Array.isArray(data.images)) {
+                    data.images = [data.images];
+                } else if (!data.images && data.image) {
+                    data.images = [data.image];
+                } else if (!data.images) {
+                    data.images = [];
+                }
+                return {
+                    id: doc.id,
+                    ...data
+                };
+            });
 
             if (latestProducts.length > 0) {
                 console.log(' Using latest products as featured:', latestProducts.length);
                 return latestProducts;
             }
 
-            // Final fallback: Use JSON products
-            console.log(' No products in Firebase, using fallback products...');
-            const fallback = this.loadFallbackProducts({});
-            return fallback.products.slice(0, limitCount);
+            // No products found, return empty array
+            console.warn('⚠️ No products found in Firestore. Please upload products using the admin panel.');
+            return [];
 
         } catch (error) {
             console.error(' Error fetching featured products:', error);
@@ -481,26 +548,21 @@ class ProductAPI {
                     return simpleProducts;
                 } catch (fallbackError) {
                     console.error(' Fallback also failed:', fallbackError);
-                    // Use JSON fallback
-                    console.warn('⚠️ Using fallback products from products.json');
-                    const fallback = this.loadFallbackProducts({});
-                    return fallback.products.slice(0, limitCount);
+                    throw fallbackError;
                 }
             }
 
-            // Use JSON fallback on any other error
-            console.warn('⚠️ Firebase error occurred. Using fallback products from products.json');
-            const fallback = this.loadFallbackProducts({});
-            return fallback.products.slice(0, limitCount);
+            // Re-throw error instead of using fallback
+            console.error('❌ Firebase error occurred:', error);
+            throw error;
         }
     }
 
     async getProductsByCategory(category, limitCount = 20) {  // Changed parameter name
         try {
             if (!db || db._isMock) {
-                console.warn('Firebase Firestore is not initialized. Using fallback products by category.');
-                const fallback = this.loadFallbackProducts({ category });
-                return fallback.products;
+                console.error('❌ Firebase Firestore is not initialized.');
+                throw new Error('Firebase Firestore is not initialized. Please check your Firebase configuration.');
             }
 
             const q = query(
@@ -516,19 +578,15 @@ class ProductAPI {
                 ...doc.data()
             }));
 
-            // If no products found, use fallback
+            // If no products found, return empty array
             if (products.length === 0) {
-                console.warn(`No products found in category ${category}. Using fallback products.`);
-                const fallback = this.loadFallbackProducts({ category });
-                return fallback.products;
+                console.warn(`⚠️ No products found in category ${category}. Please upload products using the admin panel.`);
             }
 
             return products;
         } catch (error) {
-            console.error('Error fetching products by category:', error);
-            console.warn('Using fallback products from products.json');
-            const fallback = this.loadFallbackProducts({ category });
-            return fallback.products;
+            console.error('❌ Error fetching products by category:', error);
+            throw error;
         }
     }
     // Replace the searchProducts method in your ProductAPI class with this enhanced version
@@ -895,6 +953,12 @@ class CustomerAPI {
 class AnalyticsAPI {
     async getAnalytics(dateRange = '30days') {
         try {
+            // Check if Firestore is properly initialized
+            if (!db || db._isMock) {
+                console.warn('Firebase Firestore is not initialized. Returning empty analytics data.');
+                throw new Error('Firebase Firestore is not initialized. Please check your Firebase configuration.');
+            }
+
             // Calculate date range
             const now = new Date();
             let startDate;
@@ -917,24 +981,34 @@ class AnalyticsAPI {
             }
 
             // Fetch orders for the date range
-            const ordersQuery = query(
-                collection(db, 'orders'),
-                where('createdAt', '>=', startDate),
-                orderBy('createdAt', 'desc')
-            );
-
-            const ordersSnapshot = await getDocs(ordersQuery);
-            const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            let orders = [];
+            try {
+                const ordersQuery = query(
+                    collection(db, 'orders'),
+                    where('createdAt', '>=', startDate),
+                    orderBy('createdAt', 'desc')
+                );
+                const ordersSnapshot = await getDocs(ordersQuery);
+                orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (ordersError) {
+                console.warn('Error fetching orders for analytics:', ordersError);
+                // Continue with empty orders array
+            }
 
             // Fetch customers for the date range
-            const customersQuery = query(
-                collection(db, 'customers'),
-                where('createdAt', '>=', startDate),
-                orderBy('createdAt', 'desc')
-            );
-
-            const customersSnapshot = await getDocs(customersQuery);
-            const customers = customersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            let customers = [];
+            try {
+                const customersQuery = query(
+                    collection(db, 'customers'),
+                    where('createdAt', '>=', startDate),
+                    orderBy('createdAt', 'desc')
+                );
+                const customersSnapshot = await getDocs(customersQuery);
+                customers = customersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (customersError) {
+                console.warn('Error fetching customers for analytics:', customersError);
+                // Continue with empty customers array
+            }
 
             // Calculate overview metrics
             const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
@@ -973,53 +1047,124 @@ class AnalyticsAPI {
                 recentActivity
             };
         } catch (error) {
-            handleApiError(error, 'fetch analytics');
+            console.error('Error in getAnalytics:', error);
+            // Re-throw error so component can handle it
+            throw error;
         }
     }
 
     generateSalesChart(orders, dateRange) {
         // Group orders by time periods
-        const periods = dateRange === '7days' ? 7 : dateRange === '30days' ? 4 : 12;
+        const periods = dateRange === '7days' ? 7 : dateRange === '30days' ? 4 : dateRange === '90days' ? 12 : 12;
         const chart = [];
-
+        const now = new Date();
+        
+        // Initialize chart with zero values
         for (let i = 0; i < periods; i++) {
-            const value = Math.random() * 50000 + 10000; // Mock data
             chart.push({
                 label: dateRange === '7days' ? `Day ${i + 1}` :
                     dateRange === '30days' ? `Week ${i + 1}` :
                         `Month ${i + 1}`,
-                value: Math.round(value)
+                value: 0
             });
         }
 
-        return chart;
+        // Group orders by period
+        orders.forEach(order => {
+            const orderDate = order.createdAt?.toDate ? order.createdAt.toDate() : new Date(order.createdAt);
+            if (!orderDate || isNaN(orderDate.getTime())) return;
+
+            let periodIndex = 0;
+            const orderValue = order.total || 0;
+
+            if (dateRange === '7days') {
+                // Group by day
+                const daysDiff = Math.floor((now - orderDate) / (1000 * 60 * 60 * 24));
+                periodIndex = periods - 1 - daysDiff;
+            } else if (dateRange === '30days') {
+                // Group by week
+                const daysDiff = Math.floor((now - orderDate) / (1000 * 60 * 60 * 24));
+                periodIndex = periods - 1 - Math.floor(daysDiff / 7);
+            } else {
+                // Group by month
+                const monthsDiff = (now.getFullYear() - orderDate.getFullYear()) * 12 + 
+                                  (now.getMonth() - orderDate.getMonth());
+                periodIndex = periods - 1 - monthsDiff;
+            }
+
+            if (periodIndex >= 0 && periodIndex < periods) {
+                chart[periodIndex].value += orderValue;
+            }
+        });
+
+        // Round values
+        return chart.map(item => ({
+            ...item,
+            value: Math.round(item.value)
+        }));
     }
 
     async getTopProducts(orders) {
-        // Mock top products data
-        return [
-            {
-                id: '1',
-                name: 'Banarasi Silk Saree',
-                image: 'https://images.unsplash.com/photo-1610030469978-6bb537f3b982?w=100&h=100&fit=crop',
-                sales: 45,
-                revenue: 202500
-            },
-            {
-                id: '2',
-                name: 'Designer Georgette',
-                image: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=100&h=100&fit=crop',
-                sales: 38,
-                revenue: 121600
-            },
-            {
-                id: '3',
-                name: 'Cotton Handloom',
-                image: 'https://images.unsplash.com/photo-1596706487679-9f95f5891975?w=100&h=100&fit=crop',
-                sales: 52,
-                revenue: 93600
+        // Aggregate products from orders
+        const productMap = {};
+
+        orders.forEach(order => {
+            if (order.items && Array.isArray(order.items)) {
+                order.items.forEach(item => {
+                    const productId = item.id || item.productId;
+                    if (!productId) return;
+
+                    if (!productMap[productId]) {
+                        productMap[productId] = {
+                            id: productId,
+                            name: item.name || 'Unknown Product',
+                            image: item.image || item.images?.[0] || 'https://via.placeholder.com/100',
+                            sales: 0,
+                            revenue: 0
+                        };
+                    }
+
+                    const quantity = item.quantity || 1;
+                    const price = item.price || 0;
+                    productMap[productId].sales += quantity;
+                    productMap[productId].revenue += price * quantity;
+                });
             }
-        ];
+        });
+
+        // Convert to array and sort by revenue
+        const topProducts = Object.values(productMap)
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 3);
+
+        // If no products found, return mock data
+        if (topProducts.length === 0) {
+            return [
+                {
+                    id: '1',
+                    name: 'Banarasi Silk Saree',
+                    image: 'https://images.unsplash.com/photo-1610030469978-6bb537f3b982?w=100&h=100&fit=crop',
+                    sales: 0,
+                    revenue: 0
+                },
+                {
+                    id: '2',
+                    name: 'Designer Georgette',
+                    image: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=100&h=100&fit=crop',
+                    sales: 0,
+                    revenue: 0
+                },
+                {
+                    id: '3',
+                    name: 'Cotton Handloom',
+                    image: 'https://images.unsplash.com/photo-1596706487679-9f95f5891975?w=100&h=100&fit=crop',
+                    sales: 0,
+                    revenue: 0
+                }
+            ];
+        }
+
+        return topProducts;
     }
 
     calculateCustomerMetrics(orders, customers) {
